@@ -1051,11 +1051,12 @@
         } else v.pause();
       }
     }, { rootMargin: "120px 0px" });
-    function clip(id, poster, cls) {
+    // src: an explicit clip (the real-world recordings); otherwise the task's simulated orbit loop
+    function clip(id, poster, cls, src) {
       const box = el("span", { class: `xp-clip ${cls || ""}` },
         el("img", { src: poster || `assets/posters/${id}.jpg`, alt: "", loading: "lazy", decoding: "async" }));
-      if (VIDEO_STATUS[id] && VIDEO_STATUS[id].success) {
-        const v = el("video", { muted: true, loop: true, playsinline: true, preload: "none", "data-src": `videos/tasks_sm/${id}.mp4`, "aria-hidden": "true" });
+      if (src || (VIDEO_STATUS[id] && VIDEO_STATUS[id].success)) {
+        const v = el("video", { muted: true, loop: true, playsinline: true, preload: "none", "data-src": src || `videos/tasks_sm/${id}.mp4`, "aria-hidden": "true" });
         v.muted = true;
         v.addEventListener("playing", () => v.classList.add("ready"), { once: true });
         box.append(v);
@@ -1088,7 +1089,7 @@
           nums.push([n, p]);
           return n;
         })),
-        el("span", { class: "xp-stat-k", text: t.label }))));
+        t.label ? el("span", { class: "xp-stat-k", text: t.label }) : null)));
       whenSeen(host, () => nums.forEach(([n, p]) => countTo(n, p.v, p.d ?? 1, p.s ?? "%")));
     }
 
@@ -1300,11 +1301,6 @@
       a.after(legend([["level alone", "color-mix(in srgb, var(--l2) 55%, transparent)"], ["gain", "var(--up)"], ["loss", "var(--down)"]]));
       seg(document.getElementById("xp-q2-set"), [["all", "All"], ["rigid", "Rigid"], ["deformable", "Deformable"]], (k) => levelTransfer(a, (set = k), true));
       suitePairs(b);
-      const lv = XP.q2.levels.all.xfer, pr = XP.q2.pairs.flatMap((p) => [p.aToB, p.bToA]);
-      stats("xp-stats-q2", [
-        { parts: [{ v: lv.filter((x) => x.d > 0).length, d: 0, s: "" }, "/", { v: lv.length, d: 0, s: "" }], label: "level transfers help", c: "var(--down)" },
-        { parts: [{ v: pr.filter((x) => x.d > 0).length, d: 0, s: "" }, "/", { v: pr.length, d: 0, s: "" }], label: "suite transfers help", c: "var(--up)" },
-      ]);
     })();
 
     /* ── Q3 · Tables IV, VI, VIII: success falls as more tasks share one policy ── */
@@ -1360,10 +1356,8 @@
           `<div class="tt-row"><span>change</span><b style="color:var(--down)">${sgn(d)} pp</b></div>`);
       });
       b.append(legend([["ST · one policy per task", "var(--s2)", "ghost"], ["MT-A · one policy, 112 tasks", "var(--s2)"]]));
-      const drops = cells.filter(({ i, j }) => D.mtaVsSt[i][j] < 0).length;
       stats("xp-stats-q3", [
-        { parts: [{ v: D.overall.st, c: "var(--s2)" }, "→", { v: D.overall.mta, c: "var(--down)" }], label: "ST → MT-A, all tasks", c: "var(--text)" },
-        { parts: [{ v: drops, d: 0, s: "" }, "/", { v: cells.length, d: 0, s: "" }], label: "suites drop", c: "var(--down)" },
+        { parts: [{ v: D.overall.st, c: "var(--s2)" }, "→", { v: D.overall.mta, c: "var(--down)" }], label: "", c: "var(--text)" },
       ]);
     })();
 
@@ -1416,11 +1410,6 @@
       }
       draw(false);
       narrow.addEventListener("change", () => draw(true));
-      const gain = D.all[D.all.length - 1] - D.all[0];
-      stats("xp-stats-q4", [
-        { parts: [{ v: D.demos[D.demos.length - 1] / D.demos[0], d: 0, s: "×" }], label: "more demos", c: "var(--text)" },
-        { parts: [{ v: D.all[0] }, "→", { v: D.all[D.all.length - 1] }], label: `mean success, +${gain.toFixed(1)} pp`, c: "var(--text)" },
-      ]);
     })();
 
     /* ── Q5 · Table IX + Fig. 7: real vs. simulation, level by level ── */
@@ -1440,7 +1429,7 @@
                 el("b", { text: `${v}` }), el("i", { style: { "--h": `${Math.max(v, 1.5)}%` } }))));
             const node = el("figure", { class: "xp-rt" },
               bars,
-              el("span", { class: "xp-rt-m real" }, el("img", { src: `assets/real/${t.name}-real.jpg`, alt: `${t.name}, real-world setup`, loading: "lazy", decoding: "async" }), el("em", { text: "Real" })),
+              el("span", { class: "xp-rt-m real" }, clip(t.id, `assets/real/${t.name}-real.jpg`, "", `videos/real/${t.name}.mp4`), el("em", { text: "Real" })),
               el("span", { class: "xp-rt-m sim" }, clip(t.id, `assets/real/${t.name}-sim.jpg`), el("em", { text: "Sim" })),
               el("figcaption", { text: t.name.replace(/([a-z])([A-Z])/g, "$1\u200b$2") }));
             hover(bars, () => `<div class="tt-title">${t.name} · Level ${lv}</div>` + tipRow("real world", `${t.real}%`, "var(--real)") + tipRow("simulation", `${t.sim}%`, "var(--s1)"));
