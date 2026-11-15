@@ -293,22 +293,16 @@
       <!-- the metric, as defined in the paper (Sec. IV-B) -->
       <div class="al-text reveal" id="al-def">
         <p>We define <strong>Attained Level (AL)</strong> to measure how far up the ladder a policy gets. It is the highest difficulty level at which the policy succeeds on enough of the tasks, at that level and at every level below it.</p>
-        <dl class="al-eqs" aria-label="Success rate of policy m on task T is the mean of its 50 rollout outcomes. Coverage C k of m and tau is the fraction of tasks in level k whose success rate is at least tau. AL of m is the largest level l such that the coverage of every level from 1 to l is at least rho, or 0 if there is none.">
-          <div class="al-eq">
-            <dt>Task success rate</dt>
-            <dd class="m" aria-hidden="true"><i>p̂</i><sub><i>m</i></sub>(<i>T</i>) = <span class="frac"><span>1</span><span>50</span></span> <span class="bigop"><small>50</small>∑<small><i>i</i>=1</small></span> <i>y</i><sub><i>m</i>,<i>T</i>,<i>i</i></sub></dd>
-          </div>
-          <div class="al-eq">
-            <dt>Coverage of level <i>k</i></dt>
-            <dd class="m" aria-hidden="true"><i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) = <span class="frac"><span>1</span><span>|𝒯<sub><i>k</i></sub>|</span></span> <span class="bigop">∑<small><i>T</i>∈𝒯<sub><i>k</i></sub></small></span> 𝟙[ <i>p̂</i><sub><i>m</i></sub>(<i>T</i>) ≥ <i>τ</i> ]</dd>
-          </div>
-          <div class="al-eq">
-            <dt>Attained Level</dt>
-            <dd class="m" aria-hidden="true">AL<sub><i>τ</i>,<i>ρ</i></sub>(<i>m</i>) = max( {0} ∪ { <i>ℓ</i> ∈ {1,…,4} : <span class="bigop">min<small>1≤<i>k</i>≤<i>ℓ</i></small></span> <i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) ≥ <i>ρ</i> } )</dd>
-          </div>
-        </dl>
-        <p>Here <i>y</i><sub><i>m</i>,<i>T</i>,<i>i</i></sub> ∈ {0, 1} is the outcome of rollout <i>i</i> of policy <i>m</i> on task <i>T</i>, 𝒯<sub><i>k</i></sub> is the set of 28 tasks in level <i>k</i>, <i>τ</i> is the success rate a task must reach, and <i>ρ</i> is the share of a level's tasks that must reach it. We fix <i>ρ</i> = 0.8, so a level needs 23 of its 28 tasks. AL&nbsp;=&nbsp;0 means that Level&nbsp;1 is not attained.</p>
-        <p>We report two versions, which differ only in <i>τ</i>.</p>
+        <p>Let <i>p̂</i><sub><i>m</i></sub>(<i>T</i>) be the success rate of policy <i>m</i> on task <i>T</i>. We define the <strong><i>τ</i>-coverage</strong> of a given level <i>k</i>:</p>
+        <div class="al-eq">
+          <span class="m" role="math" aria-label="C k of m and tau equals one over the number of tasks in level k, times the sum over the tasks T in level k of the indicator that the success rate of m on T is at least tau"><i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) = <span class="frac"><span>1</span><span>|𝒯<sub><i>k</i></sub>|</span></span> <span class="bigop">∑<small><i>T</i>∈𝒯<sub><i>k</i></sub></small></span> 𝟙[ <i>p̂</i><sub><i>m</i></sub>(<i>T</i>) ≥ <i>τ</i> ]</span>
+          <span class="al-gloss">the share of the tasks 𝒯<sub><i>k</i></sub> in level <i>k</i> whose success rate is at least <i>τ</i></span>
+        </div>
+        <p>The Attained Level of policy <i>m</i> is then:</p>
+        <div class="al-eq">
+          <span class="m" role="math" aria-label="AL tau of m equals the largest level l from 1 to 4 such that the tau-coverage of every level from 1 to l is at least 0.8, or 0 if there is none">AL<sub><i>τ</i></sub>(<i>m</i>) = max( {0} ∪ { <i>ℓ</i> ∈ {1,…,4} : <span class="bigop">min<small>1≤<i>k</i>≤<i>ℓ</i></small></span> <i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) ≥ 0.8 } )</span>
+        </div>
+        <p>Each level has 28 tasks, so a level needs 23 of them. AL&nbsp;=&nbsp;0 means that Level&nbsp;1 is not attained. We report two versions, which differ only in <i>τ</i>.</p>
       </div>
 
       <div class="al-vers">
