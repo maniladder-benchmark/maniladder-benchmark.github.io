@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ManiLadder</title>
+  <meta name="description" content="ManiLadder: Benchmarking Robot Manipulation Through a Categorized and Multi-Difficulty-Level Task Ladder. 112 tasks, 4 difficulty levels, 8 categories per level.">
+  <meta name="theme-color" content="#05060b">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#video">Skip to content</a>
+
+  <!-- ───────────────────────── Hero ───────────────────────── -->
+  <header class="hero" id="top">
+    <div class="wall" aria-hidden="true">
+      <video id="wall-video" muted loop playsinline preload="auto" poster="assets/hero/wall.jpg" src="videos/hero/wall.mp4"></video>
+      <canvas id="wall-canvas"></canvas>
+    </div>
+    <div class="hero-shade" aria-hidden="true"></div>
+    <div class="hero-grid" aria-hidden="true"></div>
+
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <img class="hero-logo" src="assets/logo-dark.png" alt="ManiLadder" width="1200" height="152">
+        <span class="hero-tagline">Benchmarking Robot Manipulation Through a
+          <span class="grad-blue">Categorized</span> and
+          <span class="grad-orange">Multi-Difficulty-Level</span> Task Ladder</span>
+      </h1>
+
+      <div class="authors">
+        <ul class="author-row author-lead" aria-label="Lead authors">
+          <li>Chongkai Gao<sup>*1</sup></li>
+          <li>Jieao Shi<sup>*1</sup></li>
+          <li>Zhaoyu Mu<sup>*1</sup></li>
+          <li>Yudi Lin<sup>*1,2</sup></li>
+        </ul>
+        <ul class="author-row" aria-label="Authors">
+          <li>Xuanwei Liu<sup>1</sup></li>
+          <li>Wei Ken Ng<sup>3</sup></li>
+          <li>Baiye Cheng<sup>4</sup></li>
+          <li>Anqi Chen<sup>5</sup></li>
+          <li>Kerun Liu<sup>6</sup></li>
+          <li>Zhuoran Li<sup>7</sup></li>
+          <li>Xuchuan Huang<sup>8</sup></li>
+          <li>Haoyang Li<sup>7</sup></li>
+          <li>Shengjia Zhu<sup>7</sup></li>
+          <li>Nga Teng Chan<sup>9</sup></li>
+          <li>Yuxuan Zhang<sup>1</sup></li>
+          <li>Xingyu Chen<sup>1</sup></li>
+          <li>Lin Shao<sup>1</sup></li>
+        </ul>
+        <p class="author-note"><sup>*</sup>Equal contribution</p>
+      </div>
+
+      <ul class="affils" aria-label="Affiliations">
+        <li><img src="assets/affil/nus.png" alt="" width="96" height="96"><sup>1</sup>National University of Singapore</li>
+        <li><img src="assets/affil/ntu.png" alt="" width="96" height="96"><sup>2</sup>Nanyang Technological University</li>
+        <li><img src="assets/affil/uoft.png" alt="" width="96" height="96"><sup>3</sup>University of Toronto</li>
+        <li><img src="assets/affil/hust.png" alt="" width="96" height="96"><sup>4</sup>Huazhong University of Science and Technology</li>
+        <li><img src="assets/affil/nju.png" alt="" width="96" height="96"><sup>5</sup>Nanjing University</li>
+        <li><img src="assets/affil/kth.png" alt="" width="96" height="96"><sup>6</sup>KTH Royal Institute of Technology</li>
+        <li><img src="assets/affil/sjtu.png" alt="" width="96" height="96"><sup>7</sup>Shanghai Jiao Tong University</li>
+        <li><img src="assets/affil/pku.png" alt="" width="96" height="96"><sup>8</sup>Peking University</li>
+        <li><img src="assets/affil/hkust.png" alt="" width="96" height="96"><sup>9</sup>The Hong Kong University of Science and Technology</li>
+      </ul>
+
+      <div class="hero-actions">
+        <nav class="hero-cta" aria-label="Sections and resources">
+          <a class="btn btn-primary" href="#video" id="watch-overview">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch overview
+          </a>
+          <a class="btn" href="#leaderboard">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v20M17 2v20M7 7h10M7 12h10M7 17h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Leaderboard
+          </a>
+          <a class="btn" href="#tasks">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Task Gallery
+          </a>
+          <a class="btn" href="#experiments">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16V11M12 16V6M17 16v-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Experiments
+          </a>
+          <a class="btn" href="#" aria-disabled="true" title="Coming soon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zM14 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Paper <small>soon</small>
+          </a>
+          <a class="btn" href="https://huggingface.co/datasets/Linslab/ManiLadder_Dataset" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Dataset
+          </a>
+          <a class="btn" href="https://huggingface.co/Linslab/ManiLadder_PI05_Models" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7zM3 7l9 5 9-5M12 12v10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Models
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <a class="scroll-cue" href="#video" aria-label="Scroll to the overview video"><span></span></a>
+  </header>
+
+  <main>
+    <!-- ───────────────────────── Overview video ───────────────────────── -->
+    <section class="section video-section" id="video" aria-label="Overview video">
+      <div class="video-frame reveal">
+        <video id="intro-video" controls preload="metadata" playsinline poster="assets/intro-poster.jpg" aria-label="ManiLadder introduction video">
+          <source src="videos/video_corl26.mp4" type="video/mp4">
+        </video>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── Overview ───────────────────────── -->
+    <section class="section" id="overview">
+      <div class="section-head reveal">
+        <h2>Overview</h2>
+        <p class="section-lede"><strong>ManiLadder</strong> is a difficulty-calibrated simulation benchmark for robot manipulation.</p>
+      </div>
+
+      <div class="ov-eq reveal" role="img" aria-label="4 difficulty levels times 8 task suites times 3 or 4 tasks per suite equals 112 tasks">
+        <div class="eq-line">
+          <span class="eq-term"><b>4</b> difficulty levels</span>
+          <span class="eq-op">×</span>
+          <span class="eq-term"><b>8</b> task suites</span>
+          <span class="eq-op">×</span>
+          <span class="eq-term"><b>3</b> or <b>4</b> tasks per suite</span>
+          <span class="eq-op">=</span>
+          <span class="eq-term eq-total"><b>112</b> tasks</span>
+        </div>
+      </div>
+
+      <div class="matrix-card reveal" id="matrix">
+        <div class="mx" id="mx" role="group" aria-label="Task matrix: difficulty level by task suite, each suite a stack of its tasks"></div>
+      </div>
+
+      <!-- how a task earns its level: the calibration loop, played on one real example -->
+      <div class="ov-block reveal" id="level-flow">
+        <div class="ov-head">
+          <h3>Determine the task difficulty level in an objective way</h3>
+          <p>Task difficulty level is objectively anchored by <mark>the success rate</mark> of the <mark>same policy</mark> (a 50M flow matching imitation learning policy) trained on the <mark>same number of demonstrations</mark> with the <mark>same training budget</mark>.</p>
+        </div>
+
+        <div class="lf" id="lf">
+          <div class="lf-bar">
+            <p class="lf-ex">Example <b>HangMug</b><span class="lf-target">target <b>Level 2</b> · 24–58%</span></p>
+            <div class="lf-ctl">
+              <div class="lf-rounds" role="group" aria-label="Design round">
+                <button type="button" data-r="0">Round 1</button>
+                <button type="button" data-r="1">Round 2</button>
+                <button type="button" data-r="2">Round 3</button>
+              </div>
+              <button type="button" class="lf-play" id="lf-play" aria-label="Pause the animation">
+                <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+                <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <ol class="lf-flow">
+            <li class="lf-step" data-s="0">
+              <div class="lf-visw">
+                <div class="lf-vis lf-scene">
+                  <img data-r="0" src="assets/calib/r1.jpg" alt="HangMug, round 1: the mug starts on the left and the rack on the right" width="480" height="360" loading="lazy" decoding="async">
+                  <img data-r="1" src="assets/calib/r2.jpg" alt="HangMug, round 2: the mug also starts at a random rotation" width="480" height="360" loading="lazy" decoding="async">
+                  <img data-r="2" src="assets/calib/r3.jpg" alt="HangMug, round 3: mug and rack start in a random sector of the table" width="480" height="360" loading="lazy" decoding="async">
+                  <span class="lf-chip">Target L2</span>
+                  <span class="lf-stamp">Level 2</span>
+                  <span class="lf-cap" id="lf-cap"></span>
+                </div>
+              </div>
+              <div class="lf-txt">
+                <h4><i>1</i>Design the task</h4>
+              </div>
+            </li>
+
+            <li class="lf-step" data-s="1">
+              <div class="lf-visw">
+                <div class="lf-vis lf-demo">
+                  <video data-r="0" src="assets/calib/r1.mp4" poster="assets/calib/r1.jpg" muted playsinline preload="none" aria-hidden="true"></video>
+                  <video data-r="1" src="assets/calib/r2.mp4" poster="assets/calib/r2.jpg" muted playsinline preload="none" aria-hidden="true"></video>
+                  <video data-r="2" src="assets/calib/r3.mp4" poster="assets/calib/r3.jpg" muted playsinline preload="none" aria-hidden="true"></video>
+                  <span class="lf-count"><b id="lf-count">0</b> / 20 demos</span>
+                </div>
+              </div>
+              <div class="lf-txt">
+                <h4><i>2</i>Rewrite script policy and collect demos</h4>
+              </div>
+            </li>
+
+            <li class="lf-step" data-s="2">
+              <div class="lf-visw">
+                <div class="lf-vis lf-train">
+                  <svg class="lf-net" id="lf-net" viewBox="0 0 200 150" aria-hidden="true"></svg>
+                  <div class="lf-prog" id="lf-prog">
+                    <div class="lf-prog-bar"><i></i></div>
+                    <span><b id="lf-steps">0k</b> / 40k steps</span>
+                  </div>
+                </div>
+              </div>
+              <div class="lf-txt">
+                <h4><i>3</i>Train the policy</h4>
+              </div>
+            </li>
+
+            <li class="lf-step" data-s="3">
+              <div class="lf-visw">
+                <div class="lf-vis lf-eval">
+                  <svg class="lf-chart" id="lf-chart" viewBox="0 0 200 150" aria-hidden="true"></svg>
+                  <div class="lf-best"><span>best success</span><b id="lf-best">–</b></div>
+                </div>
+              </div>
+              <div class="lf-txt">
+                <h4><i>4</i>Eval the success rate</h4>
+              </div>
+            </li>
+
+            <li class="lf-step" data-s="4">
+              <div class="lf-visw">
+                <div class="lf-vis lf-check">
+                  <div class="lf-scale" id="lf-scale">
+                    <span class="lf-band" style="--lo: 60; --hi: 100; --lv: var(--l1)"><b>L1</b></span>
+                    <span class="lf-band is-target" style="--lo: 24; --hi: 58; --lv: var(--l2)"><b>L2</b><em>target</em></span>
+                    <span class="lf-band" style="--lo: 6; --hi: 22; --lv: var(--l3)"><b>L3</b></span>
+                    <span class="lf-band" style="--lo: 0; --hi: 4; --lv: var(--l4)"><b>L4</b></span>
+                    <div class="lf-mark" id="lf-mark"><b id="lf-val">0%</b><span id="lf-verdict"></span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="lf-txt">
+                <h4><i>5</i>Check the range</h4>
+              </div>
+            </li>
+          </ol>
+
+          <div class="lf-loop">
+            <i aria-hidden="true"></i>
+            <p><b>Outside the range:</b> change the design (initial randomization, error tolerance, object geometry, task horizon) and repeat.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- what one suite holds -->
+      <div class="ov-block reveal" id="suite-inside">
+        <div class="ov-head">
+          <h3>The diversity of ManiLadder</h3>
+          <p>In each task suite, we design <mark>4 manipulation skills</mark> for rigid body tasks and <mark>3 different object properties</mark> for deformable object tasks.</p>
+        </div>
+
+        <div class="si">
+          <div class="si-panel">
+            <div class="si-top">
+              <h4>Rigid-body suites <small>(Example: level 2 single arm gripper suite)</small></h4>
+              <p><b>4</b> tasks, <b>4</b> different skills</p>
+            </div>
+            <div class="si-tiles" data-kind="rigid" style="--n: 4"></div>
+          </div>
+          <div class="si-panel">
+            <div class="si-top">
+              <h4>Deformable suites <small>(Example: level 1 single arm suite)</small></h4>
+              <p><b>3</b> tasks, <b>3</b> object dimensions</p>
+            </div>
+            <div class="si-tiles" data-kind="deformable" style="--n: 3"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── Leaderboard ───────────────────────── -->
+    <section class="section" id="leaderboard">
+      <div class="section-head reveal">
+        <h2>Leaderboard</h2>
+        <p class="section-lede">The four baselines from the paper, each evaluated with 50 rollouts per task. Policies are ranked by <strong>Attained Level</strong>: how many rungs of the ladder they clear.</p>
+      </div>
+
+      <!-- the metric, as defined in the paper (Sec. IV-B) -->
+      <div class="al-def reveal" id="al-def">
+        <div class="al-def-text">
+          <span class="exp-tag">Metric</span>
+          <h3>Attained Level (AL)</h3>
+          <p>The highest difficulty level at which a policy reaches a task success threshold <i>τ</i> on at least a fraction <i>ρ</i> of the tasks, at that level and at every level below it. AL&nbsp;=&nbsp;0 means the Level&nbsp;1 criterion is not met.</p>
+        </div>
+        <div class="al-math" aria-label="Coverage C k of m and tau equals the fraction of tasks in level k whose success rate is at least tau. AL of m equals the largest level l such that the coverage of every level from 1 to l is at least rho, or 0 if there is none.">
+          <div class="al-eq">
+            <span class="al-eq-k">Coverage of level <i>k</i></span>
+            <span class="m" aria-hidden="true"><i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) = <span class="frac"><span>1</span><span>|𝒯<sub><i>k</i></sub>|</span></span> <span class="bigop">∑<small><i>T</i>∈𝒯<sub><i>k</i></sub></small></span> 𝟙[ <i>p̂</i><sub><i>m</i></sub>(<i>T</i>) ≥ <i>τ</i> ]</span>
+          </div>
+          <div class="al-eq">
+            <span class="al-eq-k">Attained Level</span>
+            <span class="m" aria-hidden="true">AL<sub><i>τ</i>,<i>ρ</i></sub>(<i>m</i>) = max( {0} ∪ { <i>ℓ</i> ∈ {1,…,4} : <span class="bigop">min<small>1≤<i>k</i>≤<i>ℓ</i></small></span> <i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) ≥ <i>ρ</i> } )</span>
+          </div>
+        </div>
+        <ul class="al-facts">
+          <li><b><i>ρ</i> = 0.8</b><span>At least 23 of the 28 tasks in each required level must qualify.</span></li>
+          <li><b>AL@50</b><span>Primary. <i>τ</i> = 0.5: a task qualifies with ≥ 25 of 50 successful rollouts.</span></li>
+          <li><b>AL@80</b><span>Strict. <i>τ</i> = 0.8: a task qualifies with ≥ 40 of 50 successful rollouts.</span></li>
+        </ul>
+      </div>
+
+      <div class="lb-grid">
+        <div class="ladder-wrap reveal">
+          <div class="ladder-bar">
+            <div class="seg" role="tablist" aria-label="Attained Level threshold" id="al-tau">
+              <button role="tab" aria-selected="true" data-tau="0.5">AL@50</button>
+              <button role="tab" aria-selected="false" data-tau="0.8">AL@80</button>
+            </div>
+            <span class="ladder-hint" id="ladder-hint"></span>
+          </div>
+          <svg id="ladder" class="ladder" viewBox="0 0 560 700" role="img" aria-labelledby="ladder-title">
+            <title id="ladder-title">Leaderboard ladder: each policy stands on its Attained Level; bars show, per level, the share of tasks above the success threshold</title>
+          </svg>
+          <ul class="ladder-key">
+            <li><i class="k-bar"></i>share of the level's tasks with success ≥ <i>τ</i></li>
+            <li><i class="k-line"></i>80% needed to clear the level</li>
+            <li><i class="k-node"></i>Attained Level</li>
+          </ul>
+        </div>
+
+        <div class="lb-side reveal">
+          <article class="lb-card" id="lb-card" aria-live="polite"></article>
+          <ol class="lb-list" id="lb-list" aria-label="Ranking"></ol>
+          <p class="lb-foot">Ranked by AL@50, then AL@80, then mean success. Mean = average over the tasks a policy was evaluated on; a task without a result counts as not meeting <i>τ</i>. AL is computed on this page from the per-task results and matches the paper for the three single-task policies.</p>
+        </div>
+      </div>
+
+      <!-- what the leaderboard is made of -->
+      <div class="lb-analysis">
+        <div class="ov-head reveal">
+          <h3>Where the policies succeed and fail</h3>
+          <p>The per-task results behind the leaderboard. Hover a mark for exact numbers, and click a task in the heatmap to watch it.</p>
+        </div>
+
+        <ol class="findings reveal">
+          <li><b>No policy gets past Level 1.</b> Under AL@50, Small Flow-Matching (28 of 28 Level 1 tasks at ≥ 50%) and single-task π0.5 (23 of 28) attain Level 1. At Level 2 the best is GPT6-Astra with 13 qualifying tasks, against 23 needed. Under AL@80 every policy is at 0; the closest is single-task π0.5 with 16 of 28.</li>
+          <li><b>The highest mean is not the highest level.</b> GPT6-Astra has the best mean success (37.9%) and leads Levels 2–4, but clears 22 of 28 Level 1 tasks, one short, so its AL@50 is 0.</li>
+          <li><b>The ladder holds for all four.</b> Mean success drops at every step from Level 1 to Level 4 for every policy, including the three that played no part in calibrating the levels.</li>
+          <li><b>Multi-task training costs π0.5 about 12 points.</b> One policy per level instead of one per task lowers mean success from 32.9% to 21.2% on the same 109 tasks. It is lower on 72 of them, and Levels 3 and 4 fall to 0.5% and 0.1%.</li>
+          <li><b>The agent and imitation learning fail on different tasks.</b> GPT6-Astra is the best single-task policy on 39 tasks, with gains as large as Stack6Blocks (100% vs. at most 8% for imitation) and DualArmRubikCube (84% vs. 0%); the paper attributes this to explicit control logic for multi-stage behavior. It also fails tasks imitation learning handles: DualArmPressButton (10% vs. 82%) and PushSoccer (10% vs. 80%).</li>
+          <li><b>Level 4 is open.</b> 12 of its 28 tasks are at 0% for every policy. Even taking the best single-task policy per task, only 2 Level 4 tasks reach 50%.</li>
+        </ol>
+
+        <div class="exp-grid lb-charts">
+          <article class="exp-card reveal">
+            <header>
+              <span class="exp-tag">By level</span>
+              <h3>Success falls at every level</h3>
+              <p>Mean success over each level's 28 tasks. GPT6-Astra is below both single-task imitation policies at Level 1 and above them at Levels 2–4. π0.5 multi-task is lowest at every level.</p>
+            </header>
+            <div class="chart" id="lb-chart-levels"></div>
+          </article>
+
+          <article class="exp-card reveal">
+            <header>
+              <span class="exp-tag">Task outcomes</span>
+              <h3>How each level's 28 tasks split</h3>
+              <p>Tasks per success bucket. The two lightest segments are the tasks that count toward AL@50; the dashed line is the 23 a level needs.</p>
+            </header>
+            <div class="chart" id="lb-chart-buckets"></div>
+          </article>
+
+          <article class="exp-card exp-wide reveal">
+            <header>
+              <span class="exp-tag">Every task</span>
+              <h3>Task-by-task success</h3>
+              <p>One column per task, one row per policy, sorted within each level from most to least solved. Bright cells in one row and dark cells in the others mark tasks only one method solves.</p>
+            </header>
+            <div class="chart" id="lb-chart-tasks"></div>
+          </article>
+
+          <article class="exp-card reveal">
+            <header>
+              <span class="exp-tag">Head to head</span>
+              <h3>Which single-task policy is best, task by task</h3>
+              <p>Count of tasks on which each policy has the highest success. π0.5 wins the most at Level 1, GPT6-Astra at Level 2, Small Flow-Matching at Level 3. At Level 4, 12 tasks are a 0% tie.</p>
+            </header>
+            <div class="chart" id="lb-chart-wins"></div>
+          </article>
+
+          <article class="exp-card reveal">
+            <header>
+              <span class="exp-tag">Embodiment &amp; object</span>
+              <h3>π0.5 and GPT6-Astra do best with one dexterous hand</h3>
+              <p>Mean success over all levels. The calibration policy is flat across groups by design (about 30%). π0.5 and GPT6-Astra peak on single-arm dexterous tasks (44%, 47%) and bottom out on dual-arm dexterous ones (26%, 28%). π0.5 is 9 points better on deformable than rigid objects; GPT6-Astra is even.</p>
+            </header>
+            <div class="chart" id="lb-chart-groups"></div>
+          </article>
+
+          <article class="exp-card reveal">
+            <header>
+              <span class="exp-tag">Agent vs. imitation</span>
+              <h3>Where GPT6-Astra and imitation learning disagree</h3>
+              <p>Largest gaps between GPT6-Astra and the better of the two imitation-learning policies, in percentage points. Bars to the left take the color of the imitation policy that wins.</p>
+            </header>
+            <div class="chart" id="lb-chart-gaps"></div>
+          </article>
+
+          <article class="exp-card reveal">
+            <header>
+              <span class="exp-tag">Single vs. multi-task</span>
+              <h3>Sharing one policy across a level hurts π0.5 on most tasks</h3>
+              <p>Each dot is a task: single-task success on x, multi-task (one policy per level) on y. Dots under the dashed line lost success. The losses are largest at Levels 1–2, about 17 points on average; at Level 3 multi-task succeeds at all on only 3 of 26 tasks.</p>
+            </header>
+            <div class="chart" id="lb-chart-mt"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── Task gallery ───────────────────────── -->
+    <section class="section" id="tasks">
+      <div class="section-head g-section-head reveal">
+        <h2>Task Gallery</h2>
+        <ul class="g-legend" aria-label="Single-task success rate shown on each task">
+          <li style="--c: var(--s1)">Small flow matching</li>
+          <li style="--c: var(--s2)">π0.5</li>
+          <li style="--c: var(--s3)">GPT6-Astra</li>
+        </ul>
+      </div>
+
+      <div class="g-top reveal" id="gallery-top">
+        <div class="filters" id="filters" role="toolbar" aria-label="Filter tasks">
+          <label class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="task-search" type="search" placeholder="Search tasks" aria-label="Search tasks">
+          </label>
+          <div class="filter-chips">
+            <div class="chips" data-key="level" role="group" aria-label="Level"></div>
+            <div class="chips" data-key="robot" role="group" aria-label="Robot"></div>
+            <div class="chips" data-key="hand" role="group" aria-label="End-effector"></div>
+            <div class="chips" data-key="object" role="group" aria-label="Object"></div>
+          </div>
+          <div class="filter-tail">
+            <span class="result-count" id="result-count" aria-live="polite"></span>
+            <button class="reset" id="filter-reset" type="button">Reset</button>
+          </div>
+        </div>
+        <div class="g-head" id="gallery-head" aria-hidden="true"></div>
+      </div>
+
+      <div class="gallery" id="gallery"></div>
+      <p class="gallery-empty" id="gallery-empty" hidden>No task matches these filters.</p>
+    </section>
+
+    <!-- ───────────────────────── Experiments ───────────────────────── -->
+    <!-- Paper Sec. V: five questions, one card each (headline = the paper's finding, big numbers, charts).
+         Numbers: data/experiments.js; charts and animations: the "experiments" block of app.js. -->
+    <section class="section" id="experiments">
+      <div class="section-head reveal">
+        <h2>Experiments</h2>
+        <p class="section-lede">Five questions, answered on the ladder.</p>
+      </div>
+
+      <nav class="xp-nav reveal" aria-label="Experiments">
+        <a href="#xp-q1"><b>Q1</b>Methods</a>
+        <a href="#xp-q2"><b>Q2</b>Transfer</a>
+        <a href="#xp-q3"><b>Q3</b>Multi-task</a>
+        <a href="#xp-q4"><b>Q4</b>Data</a>
+        <a href="#xp-q5"><b>Q5</b>Real world</a>
+      </nav>
+
+      <article class="xp reveal" id="xp-q1">
+        <header class="xp-head">
+          <div class="xp-title">
+            <span class="xp-q">Q1 · Finding 1</span>
+            <h3>No method dominates</h3>
+            <p>Best of Small FM, π0.5 and GPT6-Astra on each of the 32 suites</p>
+          </div>
+          <div class="xp-stats" id="xp-stats-q1"></div>
+        </header>
+        <div class="xp-chart" id="xp-chart-q1"></div>
+      </article>
+
+      <article class="xp reveal" id="xp-q2">
+        <header class="xp-head">
+          <div class="xp-title">
+            <span class="xp-q">Q2 · Finding 2</span>
+            <h3>Levels don’t transfer. Suites do.</h3>
+            <p>π0.5 trained on one task set, then fine-tuned on another</p>
+          </div>
+          <div class="xp-stats" id="xp-stats-q2"></div>
+        </header>
+        <div class="xp-cols xp-q2">
+          <div class="xp-panel">
+            <div class="xp-panel-h"><h4>Across levels</h4><div class="seg" role="tablist" aria-label="Task subset" id="xp-q2-set"></div></div>
+            <div class="xp-chart" id="xp-chart-q2a"></div>
+          </div>
+          <div class="xp-panel">
+            <div class="xp-panel-h"><h4>Across suites, within Level 2</h4></div>
+            <div class="xp-chart" id="xp-chart-q2b"></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="xp reveal" id="xp-q3">
+        <header class="xp-head">
+          <div class="xp-title">
+            <span class="xp-q">Q3 · Finding 3</span>
+            <h3>One policy for all 112 tasks collapses</h3>
+            <p>π0.5, one policy per task (ST) vs. one for the whole benchmark (MT-A)</p>
+          </div>
+          <div class="xp-stats" id="xp-stats-q3"></div>
+        </header>
+        <div class="xp-cols xp-q3">
+          <div class="xp-panel">
+            <div class="xp-panel-h"><h4>More tasks per policy, less success</h4></div>
+            <div class="xp-chart" id="xp-chart-q3a"></div>
+          </div>
+          <div class="xp-panel">
+            <div class="xp-panel-h"><h4>MT-A vs. ST, every suite</h4></div>
+            <div class="xp-chart" id="xp-chart-q3b"></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="xp reveal" id="xp-q4">
+        <header class="xp-head">
+          <div class="xp-title">
+            <span class="xp-q">Q4 · Finding 4</span>
+            <h3>Not saturated by data</h3>
+            <p>π0.5 on the 16 Level-2 rigid-body tasks, 20 to 200 demos per task</p>
+          </div>
+          <div class="xp-stats" id="xp-stats-q4"></div>
+        </header>
+        <div class="xp-panel">
+          <div class="xp-chart" id="xp-chart-q4"></div>
+        </div>
+      </article>
+
+      <article class="xp reveal" id="xp-q5">
+        <header class="xp-head">
+          <div class="xp-title">
+            <span class="xp-q">Q5 · Finding 5</span>
+            <h3>The ladder holds in the real world</h3>
+            <p>8 tasks rebuilt on a real xArm, 50 trials each, next to their simulated twins</p>
+          </div>
+          <div class="xp-stats" id="xp-stats-q5"></div>
+        </header>
+        <div class="xp-chart" id="xp-chart-q5"></div>
+      </article>
+    </section>
+
+    <!-- ───────────────────────── Citation ───────────────────────── -->
+    <section class="section" id="citation">
+      <div class="section-head reveal">
+        <span class="section-index">05</span>
+        <h2>Citation</h2>
+      </div>
+      <div class="bibtex reveal">
+        <button class="copy" id="copy-bib" type="button">Copy</button>
+<pre id="bib"><code>@article{maniladder2026,
+  title   = {ManiLadder: Benchmarking Robot Manipulation Through a
+             Categorized and Multi-Level Task Ladder},
+  author  = {Gao, Chongkai and Shi, Jieao and Mu, Zhaoyu and Lin, Yudi and Liu, Xuanwei and
+             Ng, Wei Ken and Cheng, Baiye and Chen, Anqi and Liu, Kerun and Li, Zhuoran and
+             Huang, Xuchuan and Li, Haoyang and Zhu, Shengjia and Chan, Nga Teng and
+             Zhang, Yuxuan and Chen, Xingyu and Shao, Lin},
+  year    = {2026}
+}</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <img src="assets/logo-dark.png" alt="ManiLadder" width="1200" height="152">
+    <p>© 2026 ManiLadder. Built on the Genesis simulator.</p>
+  </footer>
+
+  <!-- full-resolution task viewer -->
+  <dialog class="viewer" id="viewer" aria-labelledby="viewer-title">
+    <div class="viewer-inner">
+      <header>
+        <div>
+          <h3 id="viewer-title"></h3>
+          <div class="viewer-meta" id="viewer-meta"></div>
+        </div>
+        <button class="viewer-close" id="viewer-close" type="button" aria-label="Close">×</button>
+      </header>
+      <video id="viewer-video" controls autoplay muted loop playsinline></video>
+    </div>
+  </dialog>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+  <script src="data/tasks.js"></script>
+  <script src="data/video-status.js"></script>
+  <script src="data/task-scores.js"></script>
+  <script src="data/leaderboard.js"></script>
+  <script src="data/experiments.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
