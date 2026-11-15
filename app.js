@@ -591,7 +591,6 @@
     const ladders = hosts.map((host) => drawLadder(host, Number(host.dataset.tau)));
 
     // ranked list
-    const [ta, tb] = taus;
     list.replaceChildren(...ranked.map((m) => el("li", {},
       el("button", {
         class: "lb-row", type: "button", "data-id": m.id, style: { "--model-color": m.color },
@@ -600,9 +599,6 @@
         el("span", { class: "lb-rank", text: `#${m.rank}` }),
         el("span", { class: "lb-dot" }),
         el("span", { class: "lb-name" }, m.name, el("small", { text: m.variant })),
-        el("span", { class: "lb-num lb-al" }, String(m.al[ta]), el("small", { text: alName(ta) })),
-        el("span", { class: "lb-num" }, String(m.al[tb]), el("small", { text: alName(tb) })),
-        el("span", { class: "lb-num" }, pct(m.avg), el("small", { text: "mean" })),
       ))));
 
     // detail card: both thresholds per level

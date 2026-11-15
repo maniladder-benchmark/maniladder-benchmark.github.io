@@ -268,41 +268,35 @@
     <section class="section" id="leaderboard">
       <div class="section-head reveal">
         <h2>Leaderboard</h2>
-        <p class="section-lede">We tested four policies on ManiLadder. Each policy learns from the same 20 demonstrations per task and is evaluated with 50 rollouts per task.</p>
+        <p class="section-lede">Four policies, each trained on 20 demonstrations per task and evaluated with 50 rollouts per task.</p>
       </div>
 
       <ul class="lb-policies reveal" aria-label="The four policies">
         <li style="--c: var(--s1)">
           <h3>Small Flow-Matching <small>Single-task</small></h3>
-          <p>A flow-matching imitation learning policy with 50M parameters: a frozen RADIO visual encoder for the multi-view RGB images and a transformer encoder-decoder that denoises action chunks. One policy per task, trained for 40k steps with a batch size of 256; the best checkpoint is reported. This is also the reference policy that calibrates the levels.</p>
+          <p>A 50M flow-matching imitation policy, one per task. It is also the reference policy that calibrates the levels.</p>
         </li>
         <li style="--c: var(--s2)">
           <h3>π0.5 <small>Single-task</small></h3>
-          <p>A large pre-trained flow-matching vision-language-action model. The pi05_base checkpoint is fine-tuned with LoRA, one model per task; the best checkpoint is reported.</p>
+          <p>A pre-trained vision-language-action model, fine-tuned with LoRA, one model per task.</p>
         </li>
         <li style="--c: var(--s3)">
-          <h3>GPT6-Astra <small>Single-task · D20-E20</small></h3>
-          <p>An agentic script policy. GPT-6 Astra Medium works as a task-specific coding agent: it reads the RGB observations, proprioception and actions of the demonstrations, writes an executable Python policy, and refines it over up to 20 exploration episodes. The controller is then frozen for evaluation.</p>
+          <h3>GPT6-Astra <small>Single-task</small></h3>
+          <p>A coding agent that writes a Python policy from the demonstrations and refines it over 20 exploration episodes.</p>
         </li>
         <li style="--c: var(--s4)">
-          <h3>π0.5 <small>Multi-task · MT-L</small></h3>
-          <p>The same π0.5 model with LoRA, trained as one policy per difficulty level: jointly on all 28 tasks of the level for 80k steps, then evaluated on that level. The final checkpoint is reported.</p>
+          <h3>π0.5 <small>Multi-task</small></h3>
+          <p>The same π0.5 with LoRA, one policy per level, trained on all 28 tasks of the level.</p>
         </li>
       </ul>
 
       <!-- the metric, as defined in the paper (Sec. IV-B) -->
       <div class="al-text reveal" id="al-def">
-        <p>We define <strong>Attained Level (AL)</strong> to measure how far up the ladder a policy gets. It is the highest difficulty level at which the policy succeeds on enough of the tasks, at that level and at every level below it.</p>
-        <p>Let <i>p̂</i><sub><i>m</i></sub>(<i>T</i>) be the success rate of policy <i>m</i> on task <i>T</i>. We define the <strong><i>τ</i>-coverage</strong> of a given level <i>k</i>:</p>
-        <div class="al-eq">
+        <p><strong>Attained Level (AL)</strong> is the highest level a policy attains together with every level below it. A level is attained when at least 80% of its tasks (23 of 28) reach a success rate of <i>τ</i>.</p>
+        <div class="al-eqs">
           <span class="m" role="math" aria-label="C k of m and tau equals one over the number of tasks in level k, times the sum over the tasks T in level k of the indicator that the success rate of m on T is at least tau"><i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) = <span class="frac"><span>1</span><span>|𝒯<sub><i>k</i></sub>|</span></span> <span class="bigop">∑<small><i>T</i>∈𝒯<sub><i>k</i></sub></small></span> 𝟙[ <i>p̂</i><sub><i>m</i></sub>(<i>T</i>) ≥ <i>τ</i> ]</span>
-          <span class="al-gloss">the share of the tasks 𝒯<sub><i>k</i></sub> in level <i>k</i> whose success rate is at least <i>τ</i></span>
+          <span class="m" role="math" aria-label="AL tau of m equals the largest level l from 1 to 4 such that the coverage of every level from 1 to l is at least 0.8, or 0 if there is none">AL<sub><i>τ</i></sub>(<i>m</i>) = max( {0} ∪ { <i>ℓ</i> ∈ {1,…,4} : <span class="bigop">min<small>1≤<i>k</i>≤<i>ℓ</i></small></span> <i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) ≥ 0.8 } )</span>
         </div>
-        <p>The Attained Level of policy <i>m</i> is then:</p>
-        <div class="al-eq">
-          <span class="m" role="math" aria-label="AL tau of m equals the largest level l from 1 to 4 such that the tau-coverage of every level from 1 to l is at least 0.8, or 0 if there is none">AL<sub><i>τ</i></sub>(<i>m</i>) = max( {0} ∪ { <i>ℓ</i> ∈ {1,…,4} : <span class="bigop">min<small>1≤<i>k</i>≤<i>ℓ</i></small></span> <i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) ≥ 0.8 } )</span>
-        </div>
-        <p>Each level has 28 tasks, so a level needs 23 of them. AL&nbsp;=&nbsp;0 means that Level&nbsp;1 is not attained. We report two versions, which differ only in <i>τ</i>.</p>
       </div>
 
       <div class="al-vers">
