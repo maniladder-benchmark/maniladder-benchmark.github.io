@@ -3,13 +3,12 @@
 //   fm    small flow-matching policy (calibration reference), 50 episodes
 //   pi05  pi0.5 single-task, 50 episodes
 //   astra GPT6-Astra agentic script policy
-// Source: Desktop/maniladder_fig4_updated/source_data.csv (columns FM_success_50ep, pi05_single, astra),
-// checked bar by bar against Fig. 4 of the Nov 7 build (maniladder_release.pdf).
+// Source: Fig. 4 of maniladder_release.pdf (bar heights read from the figure's vector data, tools/fig4_release.json).
 // null = not evaluated. The paper's figure fills the two missing GPT6-Astra entries
 // (DualArmAssembleBracket, PressFitSoftPeg) with the mean of the other two policies; they are left blank here.
 window.MANILADDER_TASK_SCORES = {
-  "BagDropIn-v1": { fm: 0.16, pi05: 0.7, astra: 0.0 },
-  "BagHanging-v1": { fm: 0.22, pi05: 0.88, astra: 0.66 },
+  "BagDropIn-v1": { fm: 0.08, pi05: 0.08, astra: 0.12 },
+  "BagHanging-v1": { fm: 0.12, pi05: 0.16, astra: 0.0 },
   "BuildTent-v1": { fm: 0.0, pi05: 0.06, astra: 0.1 },
   "ClaySealStamp-v1": { fm: 0.0, pi05: 0.0, astra: 0.38 },
   "ClothWipe-v1": { fm: 0.4, pi05: 0.52, astra: 0.42 },

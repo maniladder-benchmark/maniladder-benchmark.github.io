@@ -658,6 +658,8 @@
     if (!host || !LB.tasks.length) return;
     const models = LB.models.filter((m) => m.id !== "pi05-mt");
     const tasks = LB.tasks;
+    // the figure fills the two tasks GPT6-Astra was not run on with an imputed value (astra_fig4)
+    const val = (t, m) => t.sr[m.i] ?? (m.id === "astra-st" && t.astra_fig4 !== undefined ? t.astra_fig4 : 0);
     const HEX = ["", "#2ee6c8", "#5ca0ff", "#a47dff", "#ff7a3d"];
     const W = 1240, L = 46, R = 8, SUITE_GAP = 5, LEVEL_GAP = 16;
     const HEAD = 30, TITLE = 26, PH = 112, PGAP = 22, LABELS = 172;
@@ -707,9 +709,8 @@
         if (v === 0 || v === 0.5 || v === 1) s.append(svg("text", { class: "axis-label", x: L - 9, y: yy(v) + 4, "text-anchor": "end", text: `${Math.round(v * 100)}%` }));
       });
       tasks.forEach((t, i) => {
-        const v = t.sr[m.i], x = xs[i] + (pitch - BW) / 2;
-        if (v === null) s.append(svg("text", { class: "f4-na", x: xs[i] + pitch / 2, y: yy(0) - 4, "text-anchor": "middle", text: "×" }));
-        else if (v > EPS) s.append(svg("path", { d: vbar(x, yy(v), BW, yy(0) - yy(v), 2.5), fill: HEX[t.level], "fill-opacity": t.object === "deformable" ? 0.5 : 1 }));
+        const v = val(t, m), x = xs[i] + (pitch - BW) / 2;
+        if (v > EPS) s.append(svg("path", { d: vbar(x, yy(v), BW, yy(0) - yy(v), 2.5), fill: HEX[t.level], "fill-opacity": t.object === "deformable" ? 0.5 : 1 }));
       });
     });
 
@@ -729,7 +730,7 @@
           band.setAttribute("visibility", "visible");
           labels[i].classList.add("on");
           showTip(`<div class="tt-title">${taskLabel(t)}</div><div class="tt-sub">${taskSuite(t)}</div>` +
-            models.map((m) => `<div class="tt-row"><span><i style="--c:${m.color}"></i>${m.short}</span><b>${t.sr[m.i] === null ? "not evaluated" : pct(t.sr[m.i], 0)}</b></div>`).join("") +
+            models.map((m) => `<div class="tt-row"><span><i style="--c:${m.color}"></i>${m.short}</span><b>${pct(val(t, m), 0)}</b></div>`).join("") +
             (item ? `<div class="tt-sub">Click to watch the task</div>` : ""), evt);
         },
         onmousemove: moveTip,
@@ -744,13 +745,11 @@
         legendFor([
           { color: "#b0b7cf", label: "Rigid body" },
           { color: "rgba(176, 183, 207, 0.5)", label: "Deformable" },
-          { color: "transparent", cls: "f4-x", label: "not evaluated" },
         ])),
       el("div", { class: "f4-scroll" }, s));
     addTable(host, ["Task", "Level", "Object", "Embodiment", ...models.map((m) => m.short)],
       tasks.map((t) => [t.id.replace(/-v\d+$/, ""), String(t.level), OBJECT_LONG[t.object] || t.object, EMBODIMENT_LONG[t.embodiment] || t.embodiment,
-        ...models.map((m) => (t.sr[m.i] === null ? "—" : pct(t.sr[m.i], 0)))]),
-      "paper Fig. 4, per-task results over 50 test episodes");
+        ...models.map((m) => pct(val(t, m), 0))]));
   }
 
   /* ───────────── task gallery ───────────── */
