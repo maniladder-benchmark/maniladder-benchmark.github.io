@@ -631,8 +631,7 @@
       card.replaceChildren(
         el("div", { class: "lb-card-head" },
           el("div", {},
-            el("h3", {}, m.name, el("small", { text: m.variant })),
-            el("span", { class: "lb-kind", text: m.kind || "" })),
+            el("h3", {}, m.name, el("small", { text: m.variant }))),
           el("div", { class: "lb-scores" },
             taus.map((t) => el("div", { class: "lb-score" }, el("span", { text: alName(t) }), el("b", { text: String(m.al[t]) }))),
             el("div", { class: "lb-score" }, el("span", { text: "mean" }), el("b", { text: pct(m.avg) })))),
@@ -645,9 +644,6 @@
             el("b", { text: `L${k + 1}` }),
             taus.flatMap((t) => cell(m.cov[t][k])),
             el("span", { text: pct(m.levelMean[k]) })))),
-        el("div", { class: "lb-meta" },
-          m.protocol ? el("span", {}, el("b", { text: "Protocol " }), m.protocol) : null,
-          m.source ? el("span", {}, el("b", { text: "Source " }), m.source) : null),
       );
       requestAnimationFrame(() => requestAnimationFrame(() => {
         card.querySelectorAll(".fill").forEach((f) => { f.style.width = `${Number(f.dataset.w) * 100}%`; });
