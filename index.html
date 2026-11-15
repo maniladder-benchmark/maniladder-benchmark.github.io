@@ -337,85 +337,14 @@
         <article class="lb-card reveal" id="lb-card" aria-live="polite"></article>
       </div>
 
-      <!-- what the leaderboard is made of -->
+      <!-- per-task results: the paper's Fig. 4 -->
       <div class="lb-analysis">
         <div class="ov-head reveal">
-          <h3>Where the policies succeed and fail</h3>
-          <p>The per-task results behind the leaderboard. Hover a mark for exact numbers, and click a task in the heatmap to watch it.</p>
+          <h3>Results on every task</h3>
+          <p>The success rate of the three single-task policies on each of the 112 tasks, over 50 test episodes. Tasks are grouped by level, then object type, then embodiment. Hover a task for exact numbers, and click it to watch it.</p>
         </div>
-
-        <ol class="findings reveal">
-          <li><b>No policy gets past Level 1.</b> Under AL@50, Small Flow-Matching (28 of 28 Level 1 tasks at ≥ 50%) and single-task π0.5 (23 of 28) attain Level 1. At Level 2 the best is GPT6-Astra with 13 qualifying tasks, against 23 needed. Under AL@80 every policy is at 0; the closest is single-task π0.5 with 16 of 28.</li>
-          <li><b>The highest mean is not the highest level.</b> GPT6-Astra has the best mean success (37.9%) and leads Levels 2–4, but clears 22 of 28 Level 1 tasks, one short, so its AL@50 is 0.</li>
-          <li><b>The ladder holds for all four.</b> Mean success drops at every step from Level 1 to Level 4 for every policy, including the three that played no part in calibrating the levels.</li>
-          <li><b>Multi-task training costs π0.5 about 12 points.</b> One policy per level instead of one per task lowers mean success from 32.9% to 21.2% on the same 109 tasks. It is lower on 72 of them, and Levels 3 and 4 fall to 0.5% and 0.1%.</li>
-          <li><b>The agent and imitation learning fail on different tasks.</b> GPT6-Astra is the best single-task policy on 39 tasks, with gains as large as Stack6Blocks (100% vs. at most 8% for imitation) and DualArmRubikCube (84% vs. 0%); the paper attributes this to explicit control logic for multi-stage behavior. It also fails tasks imitation learning handles: DualArmPressButton (10% vs. 82%) and PushSoccer (10% vs. 80%).</li>
-          <li><b>Level 4 is open.</b> 12 of its 28 tasks are at 0% for every policy. Even taking the best single-task policy per task, only 2 Level 4 tasks reach 50%.</li>
-        </ol>
-
-        <div class="exp-grid lb-charts">
-          <article class="exp-card reveal">
-            <header>
-              <span class="exp-tag">By level</span>
-              <h3>Success falls at every level</h3>
-              <p>Mean success over each level's 28 tasks. GPT6-Astra is below both single-task imitation policies at Level 1 and above them at Levels 2–4. π0.5 multi-task is lowest at every level.</p>
-            </header>
-            <div class="chart" id="lb-chart-levels"></div>
-          </article>
-
-          <article class="exp-card reveal">
-            <header>
-              <span class="exp-tag">Task outcomes</span>
-              <h3>How each level's 28 tasks split</h3>
-              <p>Tasks per success bucket. The two lightest segments are the tasks that count toward AL@50; the dashed line is the 23 a level needs.</p>
-            </header>
-            <div class="chart" id="lb-chart-buckets"></div>
-          </article>
-
-          <article class="exp-card exp-wide reveal">
-            <header>
-              <span class="exp-tag">Every task</span>
-              <h3>Task-by-task success</h3>
-              <p>One column per task, one row per policy, sorted within each level from most to least solved. Bright cells in one row and dark cells in the others mark tasks only one method solves.</p>
-            </header>
-            <div class="chart" id="lb-chart-tasks"></div>
-          </article>
-
-          <article class="exp-card reveal">
-            <header>
-              <span class="exp-tag">Head to head</span>
-              <h3>Which single-task policy is best, task by task</h3>
-              <p>Count of tasks on which each policy has the highest success. π0.5 wins the most at Level 1, GPT6-Astra at Level 2, Small Flow-Matching at Level 3. At Level 4, 12 tasks are a 0% tie.</p>
-            </header>
-            <div class="chart" id="lb-chart-wins"></div>
-          </article>
-
-          <article class="exp-card reveal">
-            <header>
-              <span class="exp-tag">Embodiment &amp; object</span>
-              <h3>π0.5 and GPT6-Astra do best with one dexterous hand</h3>
-              <p>Mean success over all levels. The calibration policy is flat across groups by design (about 30%). π0.5 and GPT6-Astra peak on single-arm dexterous tasks (44%, 47%) and bottom out on dual-arm dexterous ones (26%, 28%). π0.5 is 9 points better on deformable than rigid objects; GPT6-Astra is even.</p>
-            </header>
-            <div class="chart" id="lb-chart-groups"></div>
-          </article>
-
-          <article class="exp-card reveal">
-            <header>
-              <span class="exp-tag">Agent vs. imitation</span>
-              <h3>Where GPT6-Astra and imitation learning disagree</h3>
-              <p>Largest gaps between GPT6-Astra and the better of the two imitation-learning policies, in percentage points. Bars to the left take the color of the imitation policy that wins.</p>
-            </header>
-            <div class="chart" id="lb-chart-gaps"></div>
-          </article>
-
-          <article class="exp-card reveal">
-            <header>
-              <span class="exp-tag">Single vs. multi-task</span>
-              <h3>Sharing one policy across a level hurts π0.5 on most tasks</h3>
-              <p>Each dot is a task: single-task success on x, multi-task (one policy per level) on y. Dots under the dashed line lost success. The losses are largest at Levels 1–2, about 17 points on average; at Level 3 multi-task succeeds at all on only 3 of 26 tasks.</p>
-            </header>
-            <div class="chart" id="lb-chart-mt"></div>
-          </article>
+        <div class="f4-wrap reveal">
+          <div class="chart" id="lb-chart-fig4"></div>
         </div>
       </div>
     </section>

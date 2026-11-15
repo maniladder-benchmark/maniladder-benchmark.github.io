@@ -463,17 +463,6 @@
   const OBJECT_LONG = { rigid_body: "Rigid body", deformable: "Deformable" };
   const taskLabel = (t) => (TASK_BY_ID[t.id] ? TASK_BY_ID[t.id].display_name : t.id.replace(/-v\d+$/, ""));
   const taskSuite = (t) => `L${t.level} · ${OBJECT_LONG[t.object] || t.object} · ${EMBODIMENT_LONG[t.embodiment] || t.embodiment}`;
-  function tween(ms, fn) {
-    if (reduceMotion) { fn(1); return; }
-    const start = performance.now();
-    const step = (now) => {
-      const p = Math.min(1, (now - start) / ms);
-      fn(1 - Math.pow(1 - p, 3));
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }
-
   function initLeaderboard() {
     const card = document.getElementById("lb-card");
     const list = document.getElementById("lb-list");
@@ -652,7 +641,7 @@
     select(selected);
   }
 
-  /* ───────────── leaderboard analysis: where the policies succeed and fail ───────────── */
+  /* ───────────── leaderboard: per-task results (paper Fig. 4) ───────────── */
   const legendFor = (items) => el("ul", { class: "legend" },
     items.map((it) => el("li", {}, el("i", { class: it.cls || null, style: { "--c": it.color } }), it.label)));
   // vertical bar with rounded top, anchored to the baseline
@@ -661,423 +650,107 @@
     r = Math.min(r, w / 2, h);
     return `M${x},${yTop + h}V${yTop + r}Q${x},${yTop} ${x + r},${yTop}H${x + w - r}Q${x + w},${yTop} ${x + w},${yTop + r}V${yTop + h}Z`;
   }
-  // horizontal bar growing right from x (or left when dir = -1), rounded at its data end
-  function hbar(x, yTop, len, h, dir = 1, r = 4) {
-    if (len <= 0) return "";
-    r = Math.min(r, h / 2, len);
-    const e = x + dir * len;
-    return `M${x},${yTop}H${e - dir * r}Q${e},${yTop} ${e},${yTop + r}V${yTop + h - r}Q${e},${yTop + h} ${e - dir * r},${yTop + h}H${x}Z`;
-  }
-  const BUCKETS = [
-    { label: "≥ 80%", color: "#d6ecff", ink: "#06070c", test: (v) => v >= 0.8 - EPS },
-    { label: "50–79%", color: "#73b0ff", ink: "#06070c", test: (v) => v >= 0.5 - EPS && v < 0.8 - EPS },
-    { label: "1–49%", color: "#3070d0", ink: "#eef1fb", test: (v) => v > EPS && v < 0.5 - EPS },
-    { label: "0%", color: "#3b4f7c", ink: "#eef1fb", test: (v) => v <= EPS },
-  ];
-  function hatchDefs(id) {
-    return svg("defs", {}, svg("pattern", { id, width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" },
-      svg("rect", { width: 6, height: 6, fill: "rgba(130,150,255,0.06)" }),
-      svg("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: "rgba(176,183,207,0.45)", "stroke-width": 1.5 })));
-  }
-  const SRC_PAPER = "paper Fig. 4 per-task results (single-task policies); HF Linslab/ManiLadder_PI05_Models multi_task/results.csv (π0.5 MT-L)";
 
-  function lbLevelsChart() {
-    const host = document.getElementById("lb-chart-levels");
-    if (!host) return;
-    const { models } = LB;
-    const W = 560, H = 300, L = 44, R = 6, T = 16, B = 44;
-    const ymax = Math.max(0.2, Math.ceil(Math.max(...models.flatMap((m) => m.levelMean.map((v) => v || 0))) * 10 - EPS) / 10);
-    const yy = (v) => T + (1 - v / ymax) * (H - T - B);
-    const GW = (W - L - R) / 4, BW = 22, GAP = 2, span = models.length * BW + (models.length - 1) * GAP;
-    host.append(legendFor(models.map((m) => ({ color: m.color, label: m.short }))));
-    const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Mean success rate per level for each policy" });
-    for (let v = 0; v <= ymax + EPS; v += 0.2) {
-      s.append(svg("line", { class: v < EPS ? "baseline" : "grid", x1: L, x2: W - R, y1: yy(v), y2: yy(v) }),
-        svg("text", { class: "axis-label", x: L - 8, y: yy(v) + 4, "text-anchor": "end", text: `${Math.round(v * 100)}%` }));
-    }
-    for (let k = 0; k < 4; k++) {
-      const gx = L + GW * k + GW / 2;
-      const g = svg("g", { class: "mark" });
-      const vals = models.map((m) => m.levelMean[k]);
-      const best = Math.max(...vals.map((v) => v ?? -1));
-      models.forEach((m, i) => {
-        const v = vals[i];
-        if (v === null) return;
-        const x = gx - span / 2 + i * (BW + GAP);
-        g.append(svg("path", { d: vbar(x, yy(v), BW, yy(0) - yy(v)), fill: m.color }));
-        if (v === best) g.append(svg("text", { class: "val", x: x + BW / 2, y: yy(v) - 6, "text-anchor": "middle", text: pct(v, 0) }));
-      });
-      g.append(
-        svg("text", { class: "cat", x: gx, y: H - B + 18, "text-anchor": "middle", text: `Level ${k + 1}` }),
-        svg("text", { class: "axis-label", x: gx, y: H - B + 33, "text-anchor": "middle", text: LEVEL_NAMES[k + 1] }),
-        svg("rect", {
-          class: "hit", x: gx - GW / 2, y: T, width: GW, height: H - T - B + 36,
-          onmouseenter: (evt) => {
-            host.classList.add("dim"); g.classList.add("on");
-            showTip(`<div class="tt-title">Level ${k + 1} · mean success</div>` +
-              models.map((m) => `<div class="tt-row"><span><i style="--c:${m.color}"></i>${m.short}</span><b>${pct(m.levelMean[k])}</b></div>`).join(""), evt);
-          },
-          onmousemove: moveTip,
-          onmouseleave: () => { host.classList.remove("dim"); g.classList.remove("on"); hideTip(); },
-        }));
-      s.append(g);
-    }
-    host.append(s);
-    addTable(host, ["Policy", "Level 1", "Level 2", "Level 3", "Level 4", "All"],
-      models.map((m) => [`${m.name} ${m.variant}`, ...m.levelMean.map((v) => pct(v)), pct(m.avg)]), SRC_PAPER);
-  }
+  // One panel per single-task policy, one bar per task. Tasks keep the paper's order:
+  // level, then object type (rigid, deformable), then embodiment. Color = level, faded = deformable.
+  function initTaskResults() {
+    const host = document.getElementById("lb-chart-fig4");
+    if (!host || !LB.tasks.length) return;
+    const models = LB.models.filter((m) => m.id !== "pi05-mt");
+    const tasks = LB.tasks;
+    const HEX = ["", "#2ee6c8", "#5ca0ff", "#a47dff", "#ff7a3d"];
+    const W = 1240, L = 46, R = 8, SUITE_GAP = 5, LEVEL_GAP = 16;
+    const HEAD = 30, TITLE = 26, PH = 112, PGAP = 22, LABELS = 172;
+    const suiteKey = (t) => `${t.level}|${t.object}|${t.embodiment}`;
+    let gaps = 0;
+    tasks.forEach((t, i) => {
+      if (i === 0) return;
+      if (t.level !== tasks[i - 1].level) gaps += LEVEL_GAP;
+      else if (suiteKey(t) !== suiteKey(tasks[i - 1])) gaps += SUITE_GAP;
+    });
+    const pitch = (W - L - R - gaps) / tasks.length, BW = Math.max(3, pitch - 2.4);
+    const xs = [];
+    let cur = L;
+    tasks.forEach((t, i) => {
+      if (i > 0) cur += t.level !== tasks[i - 1].level ? LEVEL_GAP : suiteKey(t) !== suiteKey(tasks[i - 1]) ? SUITE_GAP : 0;
+      xs.push(cur);
+      cur += pitch;
+    });
+    const panelTop = (p) => HEAD + p * (TITLE + PH + PGAP) + TITLE;
+    const bottom = panelTop(models.length - 1) + PH;
+    const H = bottom + LABELS;
+    const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+      "aria-label": "Success rate of every task for Small Flow-Matching, π0.5 and GPT6-Astra, grouped by level, object type and embodiment" });
 
-  function lbBucketsChart() {
-    const host = document.getElementById("lb-chart-buckets");
-    if (!host) return;
-    const { models, byLevel, rho } = LB;
-    const W = 560, LW = 92, R = 8, ROW = 21, BH = 15, HEAD = 26, BLOCK_GAP = 10;
-    const H = byLevel.length * (HEAD + models.length * ROW) + (byLevel.length - 1) * BLOCK_GAP + 4;
-    host.append(legendFor([...BUCKETS.map((b) => ({ color: b.color, label: b.label })), { color: "transparent", cls: "hatch", label: "not run" }]));
-    const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Number of tasks per success bucket, by level and policy" });
-    s.append(hatchDefs("lbHatchB"));
-    let y0 = 0;
-    byLevel.forEach((ts, k) => {
-      const n = ts.length, unit = (W - LW - R) / n, need = Math.ceil(rho * n - EPS);
-      const tx = LW + need * unit;
+    // level bands and headers
+    [1, 2, 3, 4].forEach((k) => {
+      const idx = tasks.map((t, i) => (t.level === k ? i : -1)).filter((i) => i >= 0);
+      if (!idx.length) return;
+      const x0 = xs[idx[0]] - 4, x1 = xs[idx[idx.length - 1]] + pitch + 2;
       s.append(
-        svg("text", { class: "cat", x: 0, y: y0 + 16, text: `Level ${k + 1}` }),
-        svg("text", { class: "axis-label", x: tx - 6, y: y0 + 16, "text-anchor": "end", text: `${need} of ${n} needed for ${alName(0.5)}` }));
-      models.forEach((m, r) => {
-        const yr = y0 + HEAD + r * ROW;
-        const counts = BUCKETS.map((b) => ts.filter((t) => t.sr[m.i] !== null && b.test(t.sr[m.i])).length);
-        const missing = ts.filter((t) => t.sr[m.i] === null).length;
-        const g = svg("g", { class: "mark" });
-        g.append(svg("text", { class: "axis-label lb-rowlab", x: 0, y: yr + BH - 3, text: m.short }));
-        let x = LW;
-        [...counts, missing].forEach((c, j) => {
-          if (!c) return;
-          const w = c * unit, isNA = j === BUCKETS.length;
-          g.append(svg("rect", { x: x + 1, y: yr, width: Math.max(1, w - 2), height: BH, rx: 2, fill: isNA ? "url(#lbHatchB)" : BUCKETS[j].color }));
-          if (w >= 18 && !isNA) g.append(svg("text", { class: "seg-val", x: x + w / 2, y: yr + BH - 4, "text-anchor": "middle", style: { fill: BUCKETS[j].ink }, text: String(c) }));
-          x += w;
-        });
-        g.append(svg("rect", {
-          class: "hit", x: 0, y: yr - 3, width: W, height: ROW,
-          onmouseenter: (evt) => {
-            host.classList.add("dim"); g.classList.add("on");
-            const q = counts[0] + counts[1];
-            showTip(`<div class="tt-title">${m.short} · Level ${k + 1}</div>` +
-              BUCKETS.map((b, j) => `<div class="tt-row"><span><i style="--c:${b.color}"></i>${b.label}</span><b>${counts[j]}</b></div>`).join("") +
-              (missing ? `<div class="tt-row"><span>not run</span><b>${missing}</b></div>` : "") +
-              `<div class="tt-row"><span>≥ 50% (needs ${need})</span><b>${q} ${q >= need ? "✓" : "✗"}</b></div>`, evt);
-          },
-          onmousemove: moveTip,
-          onmouseleave: () => { host.classList.remove("dim"); g.classList.remove("on"); hideTip(); },
-        }));
-        s.append(g);
-      });
-      s.append(svg("line", { class: "al-thr", x1: tx, x2: tx, y1: y0 + 21, y2: y0 + HEAD + models.length * ROW - 4 }));
-      y0 += HEAD + models.length * ROW + BLOCK_GAP;
+        svg("rect", { x: x0, y: HEAD - 6, width: x1 - x0, height: bottom - HEAD + 10, rx: 8, fill: HEX[k], opacity: 0.045 }),
+        svg("text", { x: x0 + 8, y: 16, class: "f4-level", style: { fill: HEX[k] }, text: `Level ${k}` }),
+        svg("text", { x: x0 + 68, y: 16, class: "f4-level-sub", text: LEVEL_NAMES[k] }));
     });
-    host.append(s);
-    const rows = [];
-    byLevel.forEach((ts, k) => models.forEach((m) => {
-      rows.push([`L${k + 1} ${m.short}`, ...BUCKETS.map((b) => String(ts.filter((t) => t.sr[m.i] !== null && b.test(t.sr[m.i])).length)), String(ts.filter((t) => t.sr[m.i] === null).length)]);
-    }));
-    addTable(host, ["Level · policy", ...BUCKETS.map((b) => b.label), "not run"], rows, SRC_PAPER);
-  }
 
-  function lbTasksChart() {
-    const host = document.getElementById("lb-chart-tasks");
-    if (!host) return;
-    const { models, byLevel, taskMean } = LB;
-    const grid = el("div", { class: "th-grid" });
-    byLevel.forEach((ts, k) => {
-      const sorted = ts.slice().sort((a, b) => taskMean(b) - taskMean(a) || a.id.localeCompare(b.id));
-      const cells = el("div", { class: "th-cells", style: { "--n": sorted.length } });
-      models.forEach((m) => {
-        cells.append(el("span", { class: "th-lab", text: m.short }));
-        sorted.forEach((t, j) => {
-          const v = t.sr[m.i];
-          cells.append(el("i", {
-            class: v === null ? "th-c na" : `th-c${v > 0.62 ? " light" : ""}`, "data-j": j,
-            style: v === null ? null : { background: rampColor(v) },
-          }));
-        });
+    const band = svg("rect", { class: "f4-band", x: 0, y: HEAD - 6, width: pitch + 2, height: bottom - HEAD + 10, rx: 3, visibility: "hidden" });
+    s.append(band);
+
+    models.forEach((m, p) => {
+      const top = panelTop(p), yy = (v) => top + (1 - v) * PH;
+      s.append(
+        svg("circle", { cx: L + 5, cy: top - 13, r: 5, fill: m.color }),
+        svg("text", { x: L + 17, y: top - 9, class: "f4-title", text: m.name }),
+        svg("text", { x: L + 17 + m.name.length * 8.4 + 10, y: top - 9, class: "f4-title-sub", text: `${m.variant} · mean ${pct(m.avg)}` }));
+      [0, 0.25, 0.5, 0.75, 1].forEach((v) => {
+        s.append(svg("line", { class: v === 0 ? "baseline" : "grid", x1: L - 4, x2: W - R, y1: yy(v), y2: yy(v) }));
+        if (v === 0 || v === 0.5 || v === 1) s.append(svg("text", { class: "axis-label", x: L - 9, y: yy(v) + 4, "text-anchor": "end", text: `${Math.round(v * 100)}%` }));
       });
-      const columnOf = (evt) => {
-        const c = evt.target.closest && evt.target.closest(".th-c");
-        return c ? Number(c.dataset.j) : -1;
-      };
-      let on = -1;
-      const mark = (j) => {
-        if (j === on) return;
-        cells.querySelectorAll(".th-c.on").forEach((c) => c.classList.remove("on"));
-        if (j >= 0) cells.querySelectorAll(`.th-c[data-j="${j}"]`).forEach((c) => c.classList.add("on"));
-        on = j;
-      };
-      cells.addEventListener("mouseover", (evt) => {
-        const j = columnOf(evt);
-        if (j < 0) return;
-        mark(j);
-        const t = sorted[j], item = TASK_BY_ID[t.id];
-        showTip(`<div class="tt-title">${taskLabel(t)}</div><div class="tt-sub">${t.id} · ${taskSuite(t)}</div>` +
-          models.map((m) => `<div class="tt-row"><span><i style="--c:${m.color}"></i>${m.short}</span><b>${t.sr[m.i] === null ? "not run" : pct(t.sr[m.i], 0)}</b></div>`).join("") +
-          (item && item.video ? `<div class="tt-sub">Click to watch the scripted rollout</div>` : ""), evt);
+      tasks.forEach((t, i) => {
+        const v = t.sr[m.i], x = xs[i] + (pitch - BW) / 2;
+        if (v === null) s.append(svg("text", { class: "f4-na", x: xs[i] + pitch / 2, y: yy(0) - 4, "text-anchor": "middle", text: "×" }));
+        else if (v > EPS) s.append(svg("path", { d: vbar(x, yy(v), BW, yy(0) - yy(v), 2.5), fill: HEX[t.level], "fill-opacity": t.object === "deformable" ? 0.5 : 1 }));
       });
-      cells.addEventListener("mousemove", moveTip);
-      cells.addEventListener("mouseleave", () => { mark(-1); hideTip(); });
-      cells.addEventListener("click", (evt) => {
-        const j = columnOf(evt);
-        const item = j >= 0 && TASK_BY_ID[sorted[j].id];
-        if (item && item.video) { hideTip(); openViewer(item); }
-      });
-      grid.append(el("div", { class: "th-block" },
-        el("div", { class: "th-head" },
-          el("b", { style: { "--lv": LEVEL_VARS[k + 1] }, text: `Level ${k + 1}` }),
-          el("span", { text: `${LEVEL_NAMES[k + 1]} · ${sorted.length} tasks · best → worst` })),
-        cells));
     });
-    host.append(grid, el("div", { class: "heat-scale" }, "0%", el("i"), "100%",
-      el("span", { class: "th-na-key" }, el("em"), "not run")));
-    addTable(host, ["Task", "Level", ...models.map((m) => m.short)],
-      LB.tasks.slice().sort((a, b) => a.level - b.level || taskMean(b) - taskMean(a))
-        .map((t) => [t.id, String(t.level), ...models.map((m) => (t.sr[m.i] === null ? "—" : pct(t.sr[m.i], 0)))]), SRC_PAPER);
-  }
 
-  function lbWinsChart() {
-    const host = document.getElementById("lb-chart-wins");
-    if (!host) return;
-    const { models, byLevel, tasks } = LB;
-    const st = models.filter((m) => /single/i.test(m.variant));
-    const cats = [
-      ...st.map((m) => ({ label: `${m.short} best`, color: m.color })),
-      { label: "Tie", color: "var(--s-base)", ink: "var(--text)" },
-      { label: "All 0%", color: "url(#lbHatchW)", legend: "transparent", cls: "hatch", ink: "var(--text)" },
-    ];
-    const tally = (ts) => {
-      const c = cats.map(() => 0);
-      ts.forEach((t) => {
-        const vals = st.map((m) => t.sr[m.i] ?? -1);
-        const mx = Math.max(...vals), win = vals.map((v, i) => (Math.abs(v - mx) < EPS ? i : -1)).filter((i) => i >= 0);
-        if (mx <= EPS) c[st.length + 1]++;
-        else if (win.length > 1) c[st.length]++;
-        else c[win[0]]++;
-      });
-      return c;
-    };
-    const rows = [...byLevel.map((ts, k) => ({ label: `Level ${k + 1}`, ts })), { label: "All tasks", ts: tasks }];
-    const W = 560, LW = 80, R = 8, ROW = 40, BH = 22, T = 4;
-    const H = T + rows.length * ROW + 4;
-    host.append(legendFor(cats.map((c) => ({ color: c.legend || c.color, cls: c.cls, label: c.label }))));
-    const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Which single-task policy has the highest success on each task, by level" });
-    s.append(hatchDefs("lbHatchW"));
-    const table = [];
-    rows.forEach((row, r) => {
-      const c = tally(row.ts), n = row.ts.length, unit = (W - LW - R) / n, yr = T + r * ROW + (r === rows.length - 1 ? 8 : 0);
-      const g = svg("g", { class: "mark" });
-      g.append(svg("text", { class: "cat", x: 0, y: yr + BH / 2 + 4, text: row.label }),
-        svg("text", { class: "axis-label", x: 0, y: yr + BH / 2 + 18, text: `${n} tasks` }));
-      let x = LW;
-      c.forEach((v, j) => {
-        if (!v) return;
-        const w = v * unit;
-        g.append(svg("rect", { x: x + 1, y: yr, width: Math.max(1, w - 2), height: BH, rx: 3, fill: cats[j].color }));
-        if (w >= 18) g.append(svg("text", { class: "seg-val", x: x + w / 2, y: yr + BH / 2 + 4, "text-anchor": "middle", style: { fill: cats[j].ink || "#06070c" }, text: String(v) }));
-        x += w;
-      });
-      g.append(svg("rect", {
-        class: "hit", x: 0, y: yr - 4, width: W, height: ROW,
+    // task names once, under the last panel; one hover column per task across all panels
+    const labels = tasks.map((t, i) => {
+      const cx = xs[i] + pitch / 2 + 3;
+      const lab = svg("text", { class: "f4-task", x: cx, y: bottom + 9, "text-anchor": "end", transform: `rotate(-90 ${cx} ${bottom + 9})`, text: t.id.replace(/-v\d+$/, "") });
+      s.append(lab);
+      return lab;
+    });
+    tasks.forEach((t, i) => {
+      const item = TASK_BY_ID[t.id];
+      s.append(svg("rect", {
+        class: "f4-hit", x: xs[i] - (i > 0 && suiteKey(t) === suiteKey(tasks[i - 1]) ? 0 : 2), y: HEAD - 6, width: pitch + 2, height: H - HEAD,
         onmouseenter: (evt) => {
-          host.classList.add("dim"); g.classList.add("on");
-          showTip(`<div class="tt-title">${row.label} · highest single-task success</div>` +
-            cats.map((ct, j) => `<div class="tt-row"><span>${ct.label}</span><b>${c[j]}</b></div>`).join(""), evt);
+          band.setAttribute("x", xs[i] - 1);
+          band.setAttribute("visibility", "visible");
+          labels[i].classList.add("on");
+          showTip(`<div class="tt-title">${taskLabel(t)}</div><div class="tt-sub">${taskSuite(t)}</div>` +
+            models.map((m) => `<div class="tt-row"><span><i style="--c:${m.color}"></i>${m.short}</span><b>${t.sr[m.i] === null ? "not evaluated" : pct(t.sr[m.i], 0)}</b></div>`).join("") +
+            (item ? `<div class="tt-sub">Click to watch the task</div>` : ""), evt);
         },
         onmousemove: moveTip,
-        onmouseleave: () => { host.classList.remove("dim"); g.classList.remove("on"); hideTip(); },
+        onmouseleave: () => { band.setAttribute("visibility", "hidden"); labels[i].classList.remove("on"); hideTip(); },
+        onclick: () => { if (item) openViewer(item); },
       }));
-      s.append(g);
-      table.push([row.label, ...c.map(String)]);
     });
-    s.insertBefore(svg("line", { class: "grid", x1: 0, x2: W, y1: T + (rows.length - 1) * ROW + 2, y2: T + (rows.length - 1) * ROW + 2 }), s.firstChild.nextSibling);
-    host.append(s);
-    addTable(host, ["Rows", ...cats.map((c) => c.label)], table, "same per-task results; π0.5 MT-L is left out (different training setting)");
-  }
 
-  function lbGroupsChart() {
-    const host = document.getElementById("lb-chart-groups");
-    if (!host) return;
-    const { models, tasks, mean } = LB;
-    const groups = [
-      { head: "Embodiment", items: EMBODIMENT_ORDER.map((e) => ({ label: EMBODIMENT_LONG[e], f: (t) => t.embodiment === e })) },
-      { head: "Object", items: [{ label: "Rigid body", f: (t) => t.object === "rigid_body" }, { label: "Deformable", f: (t) => t.object === "deformable" }] },
-    ];
-    groups.forEach((g) => g.items.forEach((it) => {
-      it.n = tasks.filter(it.f).length;
-      it.vals = models.map((m) => mean(tasks.filter(it.f).map((t) => t.sr[m.i])));
-    }));
-    const vmax = Math.max(0.2, Math.ceil(Math.max(...groups.flatMap((g) => g.items.flatMap((it) => it.vals.map((v) => v || 0)))) * 10 - EPS) / 10);
-    const W = 560, LW = 150, R = 44, BH = 7, GAP = 2, IT = models.length * (BH + GAP) + 12, HEAD = 22, T = 2;
-    const H = T + groups.reduce((a, g) => a + HEAD + g.items.length * IT, 0) + 22;
-    const x = (v) => LW + (v / vmax) * (W - LW - R);
-    host.append(legendFor(models.map((m) => ({ color: m.color, label: m.short }))));
-    const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Mean success by embodiment and object type for each policy" });
-    for (let v = 0; v <= vmax + EPS; v += 0.1) {
-      s.append(svg("line", { class: v < EPS ? "baseline" : "grid", x1: x(v), x2: x(v), y1: T, y2: H - 18 }),
-        svg("text", { class: "axis-label", x: x(v), y: H - 4, "text-anchor": "middle", text: `${Math.round(v * 100)}%` }));
-    }
-    let y0 = T;
-    const table = [];
-    groups.forEach((g) => {
-      s.append(svg("text", { class: "axis-label lb-grouphead", x: 0, y: y0 + 14, text: g.head.toUpperCase() }));
-      y0 += HEAD;
-      g.items.forEach((it) => {
-        const mk = svg("g", { class: "mark" });
-        mk.append(svg("text", { class: "cat", x: 0, y: y0 + 13, text: it.label }),
-          svg("text", { class: "axis-label", x: 0, y: y0 + 28, text: `${it.n} tasks` }));
-        const best = Math.max(...it.vals.map((v) => v ?? -1));
-        it.vals.forEach((v, i) => {
-          if (v === null) return;
-          const yb = y0 + i * (BH + GAP);
-          mk.append(svg("path", { d: hbar(x(0), yb, x(v) - x(0), BH, 1, 3), fill: models[i].color }));
-          if (v === best) mk.append(svg("text", { class: "val", x: x(v) + 6, y: yb + BH, text: pct(v, 0) }));
-        });
-        mk.append(svg("rect", {
-          class: "hit", x: 0, y: y0 - 4, width: W, height: IT,
-          onmouseenter: (evt) => {
-            host.classList.add("dim"); mk.classList.add("on");
-            showTip(`<div class="tt-title">${it.label} · ${it.n} tasks</div>` +
-              models.map((m, i) => `<div class="tt-row"><span><i style="--c:${m.color}"></i>${m.short}</span><b>${pct(it.vals[i])}</b></div>`).join(""), evt);
-          },
-          onmousemove: moveTip,
-          onmouseleave: () => { host.classList.remove("dim"); mk.classList.remove("on"); hideTip(); },
-        }));
-        s.append(mk);
-        table.push([it.label, String(it.n), ...it.vals.map((v) => pct(v))]);
-        y0 += IT;
-      });
-    });
-    host.append(s);
-    addTable(host, ["Group", "Tasks", ...models.map((m) => m.short)], table, SRC_PAPER);
-  }
-
-  function lbGapsChart() {
-    const host = document.getElementById("lb-chart-gaps");
-    if (!host) return;
-    const { models, tasks } = LB;
-    const agent = models.find((m) => /astra/i.test(m.id));
-    const il = models.filter((m) => /single/i.test(m.variant) && m !== agent);
-    if (!agent || il.length < 1) return;
-    const rows = tasks.filter((t) => t.sr[agent.i] !== null && il.every((m) => t.sr[m.i] !== null)).map((t) => {
-      const best = il.reduce((a, m) => (t.sr[m.i] > t.sr[a.i] ? m : a), il[0]);
-      return { t, best, d: t.sr[agent.i] - t.sr[best.i] };
-    });
-    const N = 8;
-    const ahead = rows.filter((r) => r.d > EPS).sort((a, b) => b.d - a.d).slice(0, N);
-    const behind = rows.filter((r) => r.d < -EPS).sort((a, b) => a.d - b.d).slice(0, N);
-    const W = 560, LW = 176, ROW = 21, BH = 13, HEAD = 26, T = 0;
-    const H = T + 2 * HEAD + (ahead.length + behind.length) * ROW + 8;
-    const C = LW + (W - LW) / 2, HALF = (W - LW) / 2 - 42;
-    const xd = (d) => C + d * HALF;
-    host.append(legendFor([{ color: agent.color, label: `${agent.short} ahead` }, ...il.map((m) => ({ color: m.color, label: `${m.short} ahead` }))]));
-    const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Tasks with the largest success gap between GPT6-Astra and the best imitation-learning policy" });
-    let y0 = T;
-    const block = (title, list) => {
-      s.append(svg("text", { class: "axis-label lb-grouphead", x: 0, y: y0 + 16, text: title }));
-      y0 += HEAD;
-      list.forEach((r) => {
-        const g = svg("g", { class: "mark" });
-        const pos = r.d > 0, len = Math.abs(r.d) * HALF;
-        g.append(
-          svg("text", { class: "cat", x: 0, y: y0 + BH - 2, text: taskLabel(r.t).replace(/^Dual Arm /, "DA ") }),
-          svg("path", { d: hbar(C, y0, len, BH, pos ? 1 : -1, 3), fill: pos ? agent.color : r.best.color }),
-          svg("text", { class: "val", x: xd(r.d) + (pos ? 6 : -6), y: y0 + BH - 2, "text-anchor": pos ? "start" : "end", text: `${pos ? "+" : "−"}${Math.round(Math.abs(r.d) * 100)}` }),
-          svg("rect", {
-            class: "hit", x: 0, y: y0 - 4, width: W, height: ROW,
-            onmouseenter: (evt) => {
-              host.classList.add("dim"); g.classList.add("on");
-              showTip(`<div class="tt-title">${taskLabel(r.t)}</div><div class="tt-sub">${taskSuite(r.t)}</div>` +
-                [agent, ...il].map((m) => `<div class="tt-row"><span><i style="--c:${m.color}"></i>${m.short}</span><b>${pct(r.t.sr[m.i], 0)}</b></div>`).join("") +
-                `<div class="tt-row"><span>Gap vs best imitation</span><b>${r.d > 0 ? "+" : "−"}${Math.round(Math.abs(r.d) * 100)} pp</b></div>`, evt);
-            },
-            onmousemove: moveTip,
-            onmouseleave: () => { host.classList.remove("dim"); g.classList.remove("on"); hideTip(); },
-          }));
-        s.append(g);
-        y0 += ROW;
-      });
-    };
-    block(`${agent.short.toUpperCase()} AHEAD (PP OVER THE BEST IMITATION POLICY)`, ahead);
-    block("IMITATION LEARNING AHEAD", behind);
-    s.insertBefore(svg("line", { class: "baseline", x1: C, x2: C, y1: T + HEAD - 6, y2: H - 4 }), s.firstChild);
-    host.append(s);
-    addTable(host, ["Task", "Level", agent.short, ...il.map((m) => m.short), "Gap (pp)"],
-      [...ahead, ...behind].map((r) => [r.t.id, String(r.t.level), pct(r.t.sr[agent.i], 0), ...il.map((m) => pct(r.t.sr[m.i], 0)), String(Math.round(r.d * 100))]), SRC_PAPER);
-  }
-
-  function lbMultiTaskChart() {
-    const host = document.getElementById("lb-chart-mt");
-    if (!host) return;
-    const { models, byLevel } = LB;
-    const stM = models.find((m) => m.id === "pi05-st"), mtM = models.find((m) => m.id === "pi05-mt");
-    if (!stM || !mtM) return;
-    const W = 560, PW = 226, PH = 200, GX = 60, GY = 80, L = 40, T = 44;
-    const H = T + 2 * PH + GY + 46;
-    const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "π0.5 multi-task vs. single-task success per task, one panel per level" });
-    const table = [];
-    byLevel.forEach((ts, k) => {
-      const px = L + (k % 2) * (PW + GX), py = T + Math.floor(k / 2) * (PH + GY);
-      const sx = (v) => px + v * PW, sy = (v) => py + (1 - v) * PH;
-      const pts = ts.filter((t) => t.sr[stM.i] !== null && t.sr[mtM.i] !== null);
-      const lower = pts.filter((t) => t.sr[mtM.i] < t.sr[stM.i] - EPS).length;
-      const higher = pts.filter((t) => t.sr[mtM.i] > t.sr[stM.i] + EPS).length;
-      const dm = pts.length ? pts.reduce((a, t) => a + t.sr[mtM.i] - t.sr[stM.i], 0) / pts.length : 0;
-      const p = svg("g", {});
-      p.append(svg("text", { class: "cat", x: px, y: py - 26, text: `Level ${k + 1}` }),
-        svg("text", { class: "axis-label", x: px, y: py - 10, text: `MT lower on ${lower}/${pts.length} · mean ${dm >= 0 ? "+" : "−"}${Math.abs(dm * 100).toFixed(1)} pp` }));
-      [0, 0.5, 1].forEach((v) => {
-        p.append(svg("line", { class: v === 0 ? "baseline" : "grid", x1: px, x2: px + PW, y1: sy(v), y2: sy(v) }),
-          svg("line", { class: v === 0 ? "baseline" : "grid", x1: sx(v), x2: sx(v), y1: py, y2: py + PH }),
-          svg("text", { class: "axis-label", x: px - 6, y: sy(v) + 4, "text-anchor": "end", text: `${v * 100}%` }),
-          svg("text", { class: "axis-label", x: sx(v), y: py + PH + 15, "text-anchor": "middle", text: `${v * 100}%` }));
-      });
-      p.append(svg("line", { class: "lb-diag", x1: sx(0), y1: sy(0), x2: sx(1), y2: sy(1) }));
-      const dots = pts.map((t) => {
-        const c = svg("circle", { cx: sx(t.sr[stM.i]), cy: sy(t.sr[mtM.i]), r: 4.5, fill: mtM.color, stroke: "#0e1324", "stroke-width": 2 });
-        p.append(c);
-        return { t, c, x: sx(t.sr[stM.i]), y: sy(t.sr[mtM.i]) };
-      });
-      const hit = svg("rect", { class: "hit", x: px - 6, y: py - 6, width: PW + 12, height: PH + 12 });
-      let cur = null;
-      hit.addEventListener("mousemove", (evt) => {
-        const pt = s.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
-        const loc = pt.matrixTransform(s.getScreenCTM().inverse());
-        let best = null, bd = 18 * 18;
-        dots.forEach((d) => { const dd = (d.x - loc.x) ** 2 + (d.y - loc.y) ** 2; if (dd < bd) { bd = dd; best = d; } });
-        if (cur && cur !== best) cur.c.setAttribute("r", 4.5);
-        cur = best;
-        if (!best) { hideTip(); return; }
-        best.c.setAttribute("r", 7);
-        showTip(`<div class="tt-title">${taskLabel(best.t)}</div><div class="tt-sub">${taskSuite(best.t)}</div>` +
-          `<div class="tt-row"><span><i style="--c:${stM.color}"></i>π0.5 single-task</span><b>${pct(best.t.sr[stM.i], 0)}</b></div>` +
-          `<div class="tt-row"><span><i style="--c:${mtM.color}"></i>π0.5 multi-task</span><b>${pct(best.t.sr[mtM.i], 0)}</b></div>`, evt);
-      });
-      hit.addEventListener("mouseleave", () => { if (cur) cur.c.setAttribute("r", 4.5); cur = null; hideTip(); });
-      p.append(hit);
-      s.append(p);
-      table.push([`Level ${k + 1}`, String(pts.length), String(lower), String(higher), String(pts.length - lower - higher), `${(dm * 100).toFixed(1)}`]);
-    });
-    s.append(
-      svg("text", { class: "axis-label", x: L + PW + GX / 2, y: H - 2, "text-anchor": "middle", text: "π0.5 single-task success (x)  ·  π0.5 multi-task success (y)  ·  dashed line: equal" }));
-    host.append(legendFor([{ color: mtM.color, label: "one task" }]), s);
-    addTable(host, ["Level", "Tasks", "MT lower", "MT higher", "Equal", "Mean Δ (pp)"], table, SRC_PAPER);
-  }
-
-  function initLeaderboardAnalysis() {
-    if (!LB.tasks.length) return;
-    lbLevelsChart();
-    lbBucketsChart();
-    lbTasksChart();
-    lbWinsChart();
-    lbGroupsChart();
-    lbGapsChart();
-    lbMultiTaskChart();
+    host.append(
+      el("div", { class: "f4-legend" },
+        legendFor([1, 2, 3, 4].map((k) => ({ color: HEX[k], label: `Level ${k}` }))),
+        legendFor([
+          { color: "#b0b7cf", label: "Rigid body" },
+          { color: "rgba(176, 183, 207, 0.5)", label: "Deformable" },
+          { color: "transparent", cls: "f4-x", label: "not evaluated" },
+        ])),
+      el("div", { class: "f4-scroll" }, s));
+    addTable(host, ["Task", "Level", "Object", "Embodiment", ...models.map((m) => m.short)],
+      tasks.map((t) => [t.id.replace(/-v\d+$/, ""), String(t.level), OBJECT_LONG[t.object] || t.object, EMBODIMENT_LONG[t.embodiment] || t.embodiment,
+        ...models.map((m) => (t.sr[m.i] === null ? "—" : pct(t.sr[m.i], 0)))]),
+      "paper Fig. 4, per-task results over 50 test episodes");
   }
 
   /* ───────────── task gallery ───────────── */
@@ -2003,7 +1676,7 @@
   initLevelFlow();
   initSuiteInside();
   initLeaderboard();
-  initLeaderboardAnalysis();
+  initTaskResults();
   initGallery();
   initExperiments();
 })();
