@@ -475,15 +475,12 @@
   }
 
   function initLeaderboard() {
-    const ladder = document.getElementById("ladder");
     const card = document.getElementById("lb-card");
     const list = document.getElementById("lb-list");
-    const hint = document.getElementById("ladder-hint");
-    if (!ladder || !LB.models.length) return;
+    const hosts = Array.from(document.querySelectorAll("svg.ladder[data-tau]"));
+    if (!hosts.length || !card || !list || !LB.models.length) return;
     const { models, ranked, rho, taus } = LB;
-    let tau = taus[0];
     let selected = ranked[0].id;
-    let climbed = false;
 
     // geometry: rung k sits at y(k); the zone between rungs k-1 and k is Level k
     const W = 560, Y0 = 630, Y4 = 70, RAIL_L = 176, RAIL_R = 372, PAD = 24;
@@ -492,164 +489,136 @@
     const STEP = (RAIL_R - RAIL_L) / (models.length + 1);
     const colX = (i) => RAIL_L + (i + 1) * STEP;
     const barBottom = (k) => y(k - 1) - PAD; // k = 1..4
+    const LABEL_X = RAIL_R + 30, MIN_GAP = 44;
 
-    ladder.append(svg("defs", {},
-      svg("linearGradient", { id: "railGrad", gradientUnits: "userSpaceOnUse", x1: 0, y1: Y0, x2: 0, y2: Y4 },
-        svg("stop", { offset: "0%", "stop-color": "#2ee6c8" }),
-        svg("stop", { offset: "33%", "stop-color": "#5ca0ff" }),
-        svg("stop", { offset: "66%", "stop-color": "#a47dff" }),
-        svg("stop", { offset: "100%", "stop-color": "#ff7a3d" })),
-      svg("radialGradient", { id: "groundGlow" },
-        svg("stop", { offset: "0%", "stop-color": "#2ee6c8", "stop-opacity": "0.35" }),
-        svg("stop", { offset: "100%", "stop-color": "#2ee6c8", "stop-opacity": "0" })),
-      svg("filter", { id: "softGlow", x: "-50%", y: "-50%", width: "200%", height: "200%" },
-        svg("feGaussianBlur", { stdDeviation: "6" }))));
+    // one ladder per threshold: AL@50 and AL@80 side by side
+    function drawLadder(ladder, tau) {
+      const uid = Math.round(tau * 100);
+      const ref = (name) => `url(#${name}-${uid})`;
+      ladder.append(svg("defs", {},
+        svg("linearGradient", { id: `railGrad-${uid}`, gradientUnits: "userSpaceOnUse", x1: 0, y1: Y0, x2: 0, y2: Y4 },
+          svg("stop", { offset: "0%", "stop-color": "#2ee6c8" }),
+          svg("stop", { offset: "33%", "stop-color": "#5ca0ff" }),
+          svg("stop", { offset: "66%", "stop-color": "#a47dff" }),
+          svg("stop", { offset: "100%", "stop-color": "#ff7a3d" })),
+        svg("radialGradient", { id: `groundGlow-${uid}` },
+          svg("stop", { offset: "0%", "stop-color": "#2ee6c8", "stop-opacity": "0.35" }),
+          svg("stop", { offset: "100%", "stop-color": "#2ee6c8", "stop-opacity": "0" })),
+        svg("filter", { id: `softGlow-${uid}`, x: "-50%", y: "-50%", width: "200%", height: "200%" },
+          svg("feGaussianBlur", { stdDeviation: "6" }))));
 
-    for (let k = 1; k <= 4; k++) {
-      const top = y(k), bot = y(k - 1);
-      ladder.append(
-        svg("rect", { x: RAIL_L, y: top, width: RAIL_R - RAIL_L, height: bot - top, fill: "url(#railGrad)", opacity: 0.035 }),
-        svg("text", { x: 134, y: (top + bot) / 2 - 2, "text-anchor": "end", class: "zone-label", fill: ["", "#2ee6c8", "#5ca0ff", "#a47dff", "#ff7a3d"][k], text: `Level ${k}` }),
-        svg("text", { x: 134, y: (top + bot) / 2 + 16, "text-anchor": "end", class: "zone-sub", text: LEVEL_NAMES[k] }),
-      );
-    }
-    ladder.append(
-      svg("ellipse", { cx: (RAIL_L + RAIL_R) / 2, cy: Y0 + 22, rx: 190, ry: 26, fill: "url(#groundGlow)" }),
-      svg("line", { x1: 40, y1: Y0 + 22, x2: W - 20, y2: Y0 + 22, stroke: "rgba(130,150,255,0.18)", "stroke-width": 1 }));
-    for (let k = 0; k <= 4; k++) {
-      ladder.append(
-        svg("line", { class: "rung-glow", x1: RAIL_L, x2: RAIL_R, y1: y(k), y2: y(k), stroke: "url(#railGrad)" }),
-        svg("line", { class: "rung", x1: RAIL_L, x2: RAIL_R, y1: y(k), y2: y(k), stroke: "url(#railGrad)" }),
-        svg("text", { x: RAIL_L - 16, y: y(k) + 4, "text-anchor": "end", class: "tick", text: String(k) }));
-    }
-    ladder.append(
-      svg("line", { x1: RAIL_L, x2: RAIL_L, y1: Y4 - 34, y2: Y0 + 22, stroke: "url(#railGrad)", "stroke-width": 16, opacity: 0.16, filter: "url(#softGlow)" }),
-      svg("line", { x1: RAIL_R, x2: RAIL_R, y1: Y4 - 34, y2: Y0 + 22, stroke: "url(#railGrad)", "stroke-width": 16, opacity: 0.16, filter: "url(#softGlow)" }),
-      svg("line", { class: "rail", x1: RAIL_L, x2: RAIL_L, y1: Y4 - 34, y2: Y0 + 22, stroke: "url(#railGrad)" }),
-      svg("line", { class: "rail", x1: RAIL_R, x2: RAIL_R, y1: Y4 - 34, y2: Y0 + 22, stroke: "url(#railGrad)" }),
-      svg("text", { x: (RAIL_L + RAIL_R) / 2, y: Y4 - 46, "text-anchor": "middle", class: "zone-sub", text: "attained level" }));
-
-    // coverage bars: in each level zone, one bar per policy = share of the level's tasks with success >= tau
-    const barsLayer = svg("g", {});
-    const thr = [];
-    for (let k = 1; k <= 4; k++) {
-      const ty = barBottom(k) - rho * BAR_MAX;
-      thr.push(svg("line", { class: "al-thr", x1: RAIL_L + 8, x2: RAIL_R - 8, y1: ty, y2: ty }));
-    }
-    barsLayer.append(...thr,
-      svg("text", { class: "al-thr-label", x: RAIL_L + 7, y: barBottom(1) - rho * BAR_MAX - 5, text: `${Math.round(rho * 100)}%` }));
-    models.forEach((m) => {
-      m.bars = [];
       for (let k = 1; k <= 4; k++) {
-        const x = colX(m.i) - BAR_W / 2, b = barBottom(k);
-        const fill = svg("rect", { x, y: b, width: BAR_W, height: 0, rx: 3, fill: m.color });
-        const hit = svg("rect", {
-          class: "al-hit", x: colX(m.i) - STEP / 2, y: y(k), width: STEP, height: ZH,
-          onmouseenter: (evt) => {
-            const c = m.cov[tau][k - 1];
-            showTip(`<div class="tt-title">${m.name} · ${m.variant}</div>` +
+        const top = y(k), bot = y(k - 1);
+        ladder.append(
+          svg("rect", { x: RAIL_L, y: top, width: RAIL_R - RAIL_L, height: bot - top, fill: ref("railGrad"), opacity: 0.035 }),
+          svg("text", { x: 134, y: (top + bot) / 2 - 2, "text-anchor": "end", class: "zone-label", fill: ["", "#2ee6c8", "#5ca0ff", "#a47dff", "#ff7a3d"][k], text: `Level ${k}` }),
+          svg("text", { x: 134, y: (top + bot) / 2 + 16, "text-anchor": "end", class: "zone-sub", text: LEVEL_NAMES[k] }),
+        );
+      }
+      ladder.append(
+        svg("ellipse", { cx: (RAIL_L + RAIL_R) / 2, cy: Y0 + 22, rx: 190, ry: 26, fill: ref("groundGlow") }),
+        svg("line", { x1: 40, y1: Y0 + 22, x2: W - 20, y2: Y0 + 22, stroke: "rgba(130,150,255,0.18)", "stroke-width": 1 }));
+      for (let k = 0; k <= 4; k++) {
+        ladder.append(
+          svg("line", { class: "rung-glow", x1: RAIL_L, x2: RAIL_R, y1: y(k), y2: y(k), stroke: ref("railGrad") }),
+          svg("line", { class: "rung", x1: RAIL_L, x2: RAIL_R, y1: y(k), y2: y(k), stroke: ref("railGrad") }),
+          svg("text", { x: RAIL_L - 16, y: y(k) + 4, "text-anchor": "end", class: "tick", text: String(k) }));
+      }
+      ladder.append(
+        svg("line", { x1: RAIL_L, x2: RAIL_L, y1: Y4 - 34, y2: Y0 + 22, stroke: ref("railGrad"), "stroke-width": 16, opacity: 0.16, filter: ref("softGlow") }),
+        svg("line", { x1: RAIL_R, x2: RAIL_R, y1: Y4 - 34, y2: Y0 + 22, stroke: ref("railGrad"), "stroke-width": 16, opacity: 0.16, filter: ref("softGlow") }),
+        svg("line", { class: "rail", x1: RAIL_L, x2: RAIL_L, y1: Y4 - 34, y2: Y0 + 22, stroke: ref("railGrad") }),
+        svg("line", { class: "rail", x1: RAIL_R, x2: RAIL_R, y1: Y4 - 34, y2: Y0 + 22, stroke: ref("railGrad") }),
+        svg("text", { x: (RAIL_L + RAIL_R) / 2, y: Y4 - 46, "text-anchor": "middle", class: "ladder-cap", text: alName(tau) }));
+
+      // coverage bars: in each level zone, one bar per policy = share of the level's tasks with success >= tau
+      const barsLayer = svg("g", {});
+      for (let k = 1; k <= 4; k++) {
+        const ty = barBottom(k) - rho * BAR_MAX;
+        barsLayer.append(svg("line", { class: "al-thr", x1: RAIL_L + 8, x2: RAIL_R - 8, y1: ty, y2: ty }));
+      }
+      barsLayer.append(
+        svg("text", { class: "al-thr-label", x: RAIL_L + 7, y: barBottom(1) - rho * BAR_MAX - 5, text: `${Math.round(rho * 100)}%` }));
+      const hitLayer = svg("g", {});
+      const nodesLayer = svg("g", {});
+      const labelsLayer = svg("g", { class: "labels" });
+
+      const parts = models.map((m) => {
+        const p = { m, x: colX(m.i), ty: y(m.al[tau]), ly: 0, bars: [] };
+        for (let k = 1; k <= 4; k++) {
+          const x = p.x - BAR_W / 2, b = barBottom(k), c = m.cov[tau][k - 1];
+          const fill = svg("rect", { x, y: b, width: BAR_W, height: 0, rx: 3, fill: m.color, "fill-opacity": c.pass ? 1 : 0.4 });
+          hitLayer.append(svg("rect", {
+            class: "al-hit", x: p.x - STEP / 2, y: y(k), width: STEP, height: ZH,
+            onmouseenter: (evt) => showTip(`<div class="tt-title">${m.name} · ${m.variant}</div>` +
               `<div class="tt-row"><span>Level ${k} tasks ≥ ${Math.round(tau * 100)}%</span><b>${c.q} / ${c.n}</b></div>` +
               `<div class="tt-row"><span>Coverage C<sub>${k}</sub></span><b>${pct(c.q / c.n, 0)}</b></div>` +
               `<div class="tt-row"><span>Needed (ρ = ${rho})</span><b>${c.need} / ${c.n}</b></div>` +
-              `<div class="tt-row"><span>Level ${k} criterion</span><b>${c.pass ? "✓ met" : "✗ not met"}</b></div>`, evt);
-          },
-          onmousemove: moveTip, onmouseleave: hideTip,
-          onclick: () => select(m.id),
-        });
-        barsLayer.append(svg("rect", { class: "al-track", x, y: b - BAR_MAX, width: BAR_W, height: BAR_MAX, rx: 3 }), fill);
-        m.bars.push({ fill, hit, h: 0 });
-      }
-    });
-    const hitLayer = svg("g", {});
-    models.forEach((m) => m.bars.forEach((b) => hitLayer.append(b.hit)));
-
-    const nodesLayer = svg("g", {});
-    const labelsLayer = svg("g", { class: "labels" });
-    ladder.append(barsLayer, labelsLayer, hitLayer, nodesLayer);
-
-    const LABEL_X = RAIL_R + 30, MIN_GAP = 44;
-    models.forEach((m) => {
-      m.x = colX(m.i);
-      m.y = Y0;
-      const g = svg("g", {
-        class: "node", tabindex: 0, role: "button",
-        style: { transform: `translate(${m.x}px, ${Y0}px)` },
-        onclick: () => select(m.id),
-        onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(m.id); } },
-        onmouseenter: (e) => showTip(`<div class="tt-title">${m.name} · ${m.variant}</div>` +
-          taus.map((t) => `<div class="tt-row"><span>${alName(t)}</span><b>${m.al[t]}</b></div>`).join("") +
-          `<div class="tt-row"><span>Mean success</span><b>${pct(m.avg)}</b></div>`, e),
-        onmousemove: moveTip, onmouseleave: hideTip,
-      },
-        svg("circle", { class: "node-halo", r: 30, fill: m.color, opacity: 0.25, filter: "url(#softGlow)" }),
-        svg("circle", { r: 24, fill: "transparent" }),
-        svg("circle", { class: "node-ring", r: 15, fill: "#0b0f1c", stroke: m.color, "stroke-width": 2.5 }),
-        svg("circle", { r: 6, fill: m.color }));
-      m.node = g;
-      nodesLayer.append(g);
-      m.leader = svg("path", { class: "leader", d: "" });
-      m.labelName = svg("text", { x: LABEL_X, class: "node-label", text: m.name });
-      m.labelSub = svg("text", { x: LABEL_X, class: "node-sub" });
-      m.label = svg("g", { style: { opacity: 0, transition: "opacity .6s ease .9s" } }, m.leader, m.labelName, m.labelSub);
-      labelsLayer.append(m.label);
-    });
-
-    function layout(animateNodes) {
-      models.forEach((m) => { m.ty = y(m.al[tau]); });
-      // labels right of the ladder, dodged, in node order
-      const byY = models.slice().sort((a, b) => a.ty - b.ty || a.i - b.i);
-      byY.forEach((m, i) => { m.ly = Math.min(m.ty, Y0 - 8); if (i > 0) m.ly = Math.max(m.ly, byY[i - 1].ly + MIN_GAP); });
-      const overflow = byY.length ? byY[byY.length - 1].ly - (Y0 + 8) : 0;
-      if (overflow > 0) byY.forEach((m) => { m.ly -= overflow; });
-      models.forEach((m) => {
-        m.labelName.setAttribute("y", m.ly - 2);
-        m.labelSub.setAttribute("y", m.ly + 14);
-        m.labelSub.textContent = `${m.variant.replace(/\s*\(.*\)$/, "")} · AL ${m.al[tau]}`;
-        m.leader.setAttribute("d", `M${m.x + 16},${m.ty} L${RAIL_R + 12},${m.ty} L${LABEL_X - 6},${m.ly - 4}`);
-        if (animateNodes) {
-          m.node.style.transition = "transform 1.2s cubic-bezier(.22,1,.36,1)";
-          m.node.style.transform = `translate(${m.x}px, ${m.ty}px)`;
+              `<div class="tt-row"><span>Level ${k} criterion</span><b>${c.pass ? "✓ met" : "✗ not met"}</b></div>`, evt),
+            onmousemove: moveTip, onmouseleave: hideTip,
+            onclick: () => select(m.id),
+          }));
+          barsLayer.append(svg("rect", { class: "al-track", x, y: b - BAR_MAX, width: BAR_W, height: BAR_MAX, rx: 3 }), fill);
+          p.bars.push({ fill, base: b, to: (c.q / c.n) * BAR_MAX });
         }
+        p.node = svg("g", {
+          class: "node", tabindex: 0, role: "button",
+          "aria-label": `${m.name}, ${m.variant}: ${alName(tau)} ${m.al[tau]}`,
+          style: { transform: `translate(${p.x}px, ${Y0}px)` },
+          onclick: () => select(m.id),
+          onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(m.id); } },
+          onmouseenter: (e) => showTip(`<div class="tt-title">${m.name} · ${m.variant}</div>` +
+            taus.map((t) => `<div class="tt-row"><span>${alName(t)}</span><b>${m.al[t]}</b></div>`).join("") +
+            `<div class="tt-row"><span>Mean success</span><b>${pct(m.avg)}</b></div>`, e),
+          onmousemove: moveTip, onmouseleave: hideTip,
+        },
+          svg("circle", { class: "node-halo", r: 30, fill: m.color, opacity: 0.25, filter: ref("softGlow") }),
+          svg("circle", { r: 24, fill: "transparent" }),
+          svg("circle", { class: "node-ring", r: 15, fill: "#0b0f1c", stroke: m.color, "stroke-width": 2.5 }),
+          svg("circle", { r: 6, fill: m.color }));
+        nodesLayer.append(p.node);
+        p.leader = svg("path", { class: "leader", d: "" });
+        p.labelName = svg("text", { x: LABEL_X, class: "node-label", text: m.name });
+        p.labelSub = svg("text", { x: LABEL_X, class: "node-sub", text: `${m.variant.replace(/\s*\(.*\)$/, "")} · AL ${m.al[tau]}` });
+        p.label = svg("g", { style: { opacity: 0, transition: "opacity .6s ease .9s" } }, p.leader, p.labelName, p.labelSub);
+        labelsLayer.append(p.label);
+        return p;
       });
-    }
-    function paintBars() {
-      models.forEach((m) => m.bars.forEach((b, k) => {
-        const c = m.cov[tau][k], from = b.h, to = (c.q / c.n) * BAR_MAX, base = barBottom(k + 1);
-        b.fill.setAttribute("fill-opacity", c.pass ? 1 : 0.4);
-        tween(900, (p) => {
-          b.h = from + (to - from) * p;
-          b.fill.setAttribute("height", Math.max(0, b.h));
-          b.fill.setAttribute("y", base - b.h);
-        });
-      }));
-    }
-    function climb() {
-      if (climbed) return;
-      climbed = true;
-      paintBars();
-      models.forEach((m, i) => setTimeout(() => {
-        m.node.style.transition = "transform 1.4s cubic-bezier(.22,1,.36,1)";
-        m.node.style.transform = `translate(${m.x}px, ${m.ty}px)`;
-        m.label.style.opacity = 1;
-      }, reduceMotion ? 0 : 150 + i * 200));
-    }
-    layout(false);
-    const wrap = ladder.closest(".reveal");
-    if (wrap) wrap.addEventListener("revealed", climb, { once: true });
-    else climb();
+      ladder.append(barsLayer, labelsLayer, hitLayer, nodesLayer);
 
-    document.querySelectorAll("#al-tau button").forEach((btn) => btn.addEventListener("click", () => {
-      tau = Number(btn.dataset.tau);
-      document.querySelectorAll("#al-tau button").forEach((x) => x.setAttribute("aria-selected", String(x === btn)));
-      if (hint) hint.textContent = hintText();
-      layout(climbed);
-      if (climbed) paintBars();
-      select(selected);
-    }));
-    function hintText() {
-      return `τ = ${tau} · a task counts once ${Math.round(tau * 50)} of its 50 rollouts succeed`;
+      // labels right of the ladder, dodged, in node order
+      const byY = parts.slice().sort((a, b) => a.ty - b.ty || a.m.i - b.m.i);
+      byY.forEach((p, i) => { p.ly = Math.min(p.ty, Y0 - 8); if (i > 0) p.ly = Math.max(p.ly, byY[i - 1].ly + MIN_GAP); });
+      const overflow = byY.length ? byY[byY.length - 1].ly - (Y0 + 8) : 0;
+      if (overflow > 0) byY.forEach((p) => { p.ly -= overflow; });
+      parts.forEach((p) => {
+        p.labelName.setAttribute("y", p.ly - 2);
+        p.labelSub.setAttribute("y", p.ly + 14);
+        p.leader.setAttribute("d", `M${p.x + 16},${p.ty} L${RAIL_R + 12},${p.ty} L${LABEL_X - 6},${p.ly - 4}`);
+      });
+
+      let climbed = false;
+      function climb() {
+        if (climbed) return;
+        climbed = true;
+        parts.forEach((p) => p.bars.forEach((b) => tween(900, (t) => {
+          const h = b.to * t;
+          b.fill.setAttribute("height", Math.max(0, h));
+          b.fill.setAttribute("y", b.base - h);
+        })));
+        parts.forEach((p, i) => setTimeout(() => {
+          p.node.style.transition = "transform 1.4s cubic-bezier(.22,1,.36,1)";
+          p.node.style.transform = `translate(${p.x}px, ${p.ty}px)`;
+          p.label.style.opacity = 1;
+        }, reduceMotion ? 0 : 150 + i * 200));
+      }
+      const wrap = ladder.closest(".reveal");
+      if (wrap && !wrap.classList.contains("in")) wrap.addEventListener("revealed", climb, { once: true });
+      else climb();
+
+      return { setActive: (id) => parts.forEach((p) => p.node.classList.toggle("active", p.m.id === id)) };
     }
-    if (hint) hint.textContent = hintText();
+    const ladders = hosts.map((host) => drawLadder(host, Number(host.dataset.tau)));
 
     // ranked list
     const [ta, tb] = taus;
@@ -666,31 +635,34 @@
         el("span", { class: "lb-num" }, pct(m.avg), el("small", { text: "mean" })),
       ))));
 
+    // detail card: both thresholds per level
     function select(id) {
       const m = models.find((x) => x.id === id);
       if (!m) return;
       selected = id;
-      models.forEach((x) => x.node.classList.toggle("active", x.id === id));
+      ladders.forEach((l) => l.setActive(id));
       list.querySelectorAll(".lb-row").forEach((r) => r.classList.toggle("active", r.dataset.id === id));
       card.style.setProperty("--model-color", m.color);
-      const other = taus.find((t) => t !== tau);
+      const cell = (c) => [
+        el("div", { class: `track${c.pass ? " pass" : ""}`, style: { "--thr": `${rho * 100}%` } }, el("div", { class: "fill", "data-w": c.q / c.n })),
+        el("span", { class: `lb-cov${c.pass ? " pass" : ""}`, title: c.pass ? "criterion met" : `needs ${c.need}` }, `${c.q}/${c.n}`, el("i", { text: c.pass ? "✓" : "✗" })),
+      ];
       card.replaceChildren(
         el("div", { class: "lb-card-head" },
           el("div", {},
             el("h3", {}, m.name, el("small", { text: m.variant })),
             el("span", { class: "lb-kind", text: m.kind || "" })),
-          el("div", { class: "lb-score" },
-            el("span", { text: alName(tau) }),
-            el("b", { text: String(m.al[tau]) }),
-            el("span", { text: `${alName(other)} ${m.al[other]} · mean ${pct(m.avg)}` }))),
-        el("p", { class: "lb-desc", text: m.desc || "" }),
+          el("div", { class: "lb-scores" },
+            taus.map((t) => el("div", { class: "lb-score" }, el("span", { text: alName(t) }), el("b", { text: String(m.al[t]) }))),
+            el("div", { class: "lb-score" }, el("span", { text: "mean" }), el("b", { text: pct(m.avg) })))),
         el("div", { class: "lb-bars" },
           el("div", { class: "lb-bar lb-bar-head" },
-            el("span"), el("span", { text: `tasks with success ≥ ${Math.round(tau * 100)}%` }), el("span", { text: "count" }), el("span", { text: "mean" })),
-          m.cov[tau].map((c, k) => el("div", { class: `lb-bar${c.pass ? " pass" : ""}`, style: { "--lv": LEVEL_VARS[k + 1] } },
+            el("span"),
+            taus.map((t) => el("span", { class: "lb-bar-th", text: `tasks ≥ ${Math.round(t * 100)}%` })),
+            el("span", { text: "mean" })),
+          [0, 1, 2, 3].map((k) => el("div", { class: "lb-bar", style: { "--lv": LEVEL_VARS[k + 1] } },
             el("b", { text: `L${k + 1}` }),
-            el("div", { class: "track", style: { "--thr": `${rho * 100}%` } }, el("div", { class: "fill", "data-w": c.q / c.n })),
-            el("span", { class: "lb-cov", title: c.pass ? "criterion met" : `needs ${c.need}` }, `${c.q}/${c.n}`, el("i", { text: c.pass ? "✓" : "✗" })),
+            taus.flatMap((t) => cell(m.cov[t][k])),
             el("span", { text: pct(m.levelMean[k]) })))),
         el("div", { class: "lb-meta" },
           m.protocol ? el("span", {}, el("b", { text: "Protocol " }), m.protocol) : null,

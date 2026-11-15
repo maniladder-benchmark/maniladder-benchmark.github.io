@@ -268,57 +268,85 @@
     <section class="section" id="leaderboard">
       <div class="section-head reveal">
         <h2>Leaderboard</h2>
-        <p class="section-lede">The four baselines from the paper, each evaluated with 50 rollouts per task. Policies are ranked by <strong>Attained Level</strong>: how many rungs of the ladder they clear.</p>
+        <p class="section-lede">We tested four policies on ManiLadder. Each policy learns from the same 20 demonstrations per task and is evaluated with 50 rollouts per task.</p>
       </div>
+
+      <ul class="lb-policies reveal" aria-label="The four policies">
+        <li style="--c: var(--s1)">
+          <h3>Small Flow-Matching <small>Single-task</small></h3>
+          <p>A flow-matching imitation learning policy with 50M parameters: a frozen RADIO visual encoder for the multi-view RGB images and a transformer encoder-decoder that denoises action chunks. One policy per task, trained for 40k steps with a batch size of 256; the best checkpoint is reported. This is also the reference policy that calibrates the levels.</p>
+        </li>
+        <li style="--c: var(--s2)">
+          <h3>π0.5 <small>Single-task</small></h3>
+          <p>A large pre-trained flow-matching vision-language-action model. The pi05_base checkpoint is fine-tuned with LoRA, one model per task; the best checkpoint is reported.</p>
+        </li>
+        <li style="--c: var(--s3)">
+          <h3>GPT6-Astra <small>Single-task · D20-E20</small></h3>
+          <p>An agentic script policy. GPT-6 Astra Medium works as a task-specific coding agent: it reads the RGB observations, proprioception and actions of the demonstrations, writes an executable Python policy, and refines it over up to 20 exploration episodes. The controller is then frozen for evaluation.</p>
+        </li>
+        <li style="--c: var(--s4)">
+          <h3>π0.5 <small>Multi-task · MT-L</small></h3>
+          <p>The same π0.5 model with LoRA, trained as one policy per difficulty level: jointly on all 28 tasks of the level for 80k steps, then evaluated on that level. The final checkpoint is reported.</p>
+        </li>
+      </ul>
 
       <!-- the metric, as defined in the paper (Sec. IV-B) -->
-      <div class="al-def reveal" id="al-def">
-        <div class="al-def-text">
-          <span class="exp-tag">Metric</span>
-          <h3>Attained Level (AL)</h3>
-          <p>The highest difficulty level at which a policy reaches a task success threshold <i>τ</i> on at least a fraction <i>ρ</i> of the tasks, at that level and at every level below it. AL&nbsp;=&nbsp;0 means the Level&nbsp;1 criterion is not met.</p>
-        </div>
-        <div class="al-math" aria-label="Coverage C k of m and tau equals the fraction of tasks in level k whose success rate is at least tau. AL of m equals the largest level l such that the coverage of every level from 1 to l is at least rho, or 0 if there is none.">
+      <div class="al-text reveal" id="al-def">
+        <p>We define <strong>Attained Level (AL)</strong> to measure how far up the ladder a policy gets. It is the highest difficulty level at which the policy succeeds on enough of the tasks, at that level and at every level below it.</p>
+        <dl class="al-eqs" aria-label="Success rate of policy m on task T is the mean of its 50 rollout outcomes. Coverage C k of m and tau is the fraction of tasks in level k whose success rate is at least tau. AL of m is the largest level l such that the coverage of every level from 1 to l is at least rho, or 0 if there is none.">
           <div class="al-eq">
-            <span class="al-eq-k">Coverage of level <i>k</i></span>
-            <span class="m" aria-hidden="true"><i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) = <span class="frac"><span>1</span><span>|𝒯<sub><i>k</i></sub>|</span></span> <span class="bigop">∑<small><i>T</i>∈𝒯<sub><i>k</i></sub></small></span> 𝟙[ <i>p̂</i><sub><i>m</i></sub>(<i>T</i>) ≥ <i>τ</i> ]</span>
+            <dt>Task success rate</dt>
+            <dd class="m" aria-hidden="true"><i>p̂</i><sub><i>m</i></sub>(<i>T</i>) = <span class="frac"><span>1</span><span>50</span></span> <span class="bigop"><small>50</small>∑<small><i>i</i>=1</small></span> <i>y</i><sub><i>m</i>,<i>T</i>,<i>i</i></sub></dd>
           </div>
           <div class="al-eq">
-            <span class="al-eq-k">Attained Level</span>
-            <span class="m" aria-hidden="true">AL<sub><i>τ</i>,<i>ρ</i></sub>(<i>m</i>) = max( {0} ∪ { <i>ℓ</i> ∈ {1,…,4} : <span class="bigop">min<small>1≤<i>k</i>≤<i>ℓ</i></small></span> <i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) ≥ <i>ρ</i> } )</span>
+            <dt>Coverage of level <i>k</i></dt>
+            <dd class="m" aria-hidden="true"><i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) = <span class="frac"><span>1</span><span>|𝒯<sub><i>k</i></sub>|</span></span> <span class="bigop">∑<small><i>T</i>∈𝒯<sub><i>k</i></sub></small></span> 𝟙[ <i>p̂</i><sub><i>m</i></sub>(<i>T</i>) ≥ <i>τ</i> ]</dd>
           </div>
-        </div>
-        <ul class="al-facts">
-          <li><b><i>ρ</i> = 0.8</b><span>At least 23 of the 28 tasks in each required level must qualify.</span></li>
-          <li><b>AL@50</b><span>Primary. <i>τ</i> = 0.5: a task qualifies with ≥ 25 of 50 successful rollouts.</span></li>
-          <li><b>AL@80</b><span>Strict. <i>τ</i> = 0.8: a task qualifies with ≥ 40 of 50 successful rollouts.</span></li>
-        </ul>
+          <div class="al-eq">
+            <dt>Attained Level</dt>
+            <dd class="m" aria-hidden="true">AL<sub><i>τ</i>,<i>ρ</i></sub>(<i>m</i>) = max( {0} ∪ { <i>ℓ</i> ∈ {1,…,4} : <span class="bigop">min<small>1≤<i>k</i>≤<i>ℓ</i></small></span> <i>C</i><sub><i>k</i></sub>(<i>m</i>; <i>τ</i>) ≥ <i>ρ</i> } )</dd>
+          </div>
+        </dl>
+        <p>Here <i>y</i><sub><i>m</i>,<i>T</i>,<i>i</i></sub> ∈ {0, 1} is the outcome of rollout <i>i</i> of policy <i>m</i> on task <i>T</i>, 𝒯<sub><i>k</i></sub> is the set of 28 tasks in level <i>k</i>, <i>τ</i> is the success rate a task must reach, and <i>ρ</i> is the share of a level's tasks that must reach it. We fix <i>ρ</i> = 0.8, so a level needs 23 of its 28 tasks. AL&nbsp;=&nbsp;0 means that Level&nbsp;1 is not attained.</p>
+        <p>We report two versions, which differ only in <i>τ</i>.</p>
       </div>
 
-      <div class="lb-grid">
-        <div class="ladder-wrap reveal">
-          <div class="ladder-bar">
-            <div class="seg" role="tablist" aria-label="Attained Level threshold" id="al-tau">
-              <button role="tab" aria-selected="true" data-tau="0.5">AL@50</button>
-              <button role="tab" aria-selected="false" data-tau="0.8">AL@80</button>
-            </div>
-            <span class="ladder-hint" id="ladder-hint"></span>
+      <div class="al-vers">
+        <div class="al-ver reveal">
+          <div class="al-ver-text">
+            <h3>AL@50 <small><i>τ</i> = 0.5 · primary</small></h3>
+            <p><strong>Which level can the policy solve?</strong> A task counts when the policy succeeds at least as often as it fails: 25 or more of its 50 rollouts.</p>
           </div>
-          <svg id="ladder" class="ladder" viewBox="0 0 560 700" role="img" aria-labelledby="ladder-title">
-            <title id="ladder-title">Leaderboard ladder: each policy stands on its Attained Level; bars show, per level, the share of tasks above the success threshold</title>
-          </svg>
-          <ul class="ladder-key">
-            <li><i class="k-bar"></i>share of the level's tasks with success ≥ <i>τ</i></li>
-            <li><i class="k-line"></i>80% needed to clear the level</li>
-            <li><i class="k-node"></i>Attained Level</li>
-          </ul>
+          <div class="ladder-wrap">
+            <svg class="ladder" data-tau="0.5" viewBox="0 0 560 700" role="img" aria-labelledby="ladder-title-50">
+              <title id="ladder-title-50">AL@50 ladder: each policy stands on its Attained Level at τ = 0.5; bars show, per level, the share of tasks with a success rate of at least 50%</title>
+            </svg>
+          </div>
         </div>
+        <div class="al-ver reveal">
+          <div class="al-ver-text">
+            <h3>AL@80 <small><i>τ</i> = 0.8 · strict</small></h3>
+            <p><strong>Which level has the policy mastered?</strong> A task counts only when the policy succeeds reliably: 40 or more of its 50 rollouts.</p>
+          </div>
+          <div class="ladder-wrap">
+            <svg class="ladder" data-tau="0.8" viewBox="0 0 560 700" role="img" aria-labelledby="ladder-title-80">
+              <title id="ladder-title-80">AL@80 ladder: each policy stands on its Attained Level at τ = 0.8; bars show, per level, the share of tasks with a success rate of at least 80%</title>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <ul class="ladder-key reveal">
+        <li><i class="k-bar"></i>share of the level's tasks with success ≥ <i>τ</i></li>
+        <li><i class="k-line"></i>80% needed to attain the level</li>
+        <li><i class="k-node"></i>Attained Level of a policy</li>
+      </ul>
 
+      <div class="lb-grid">
         <div class="lb-side reveal">
-          <article class="lb-card" id="lb-card" aria-live="polite"></article>
           <ol class="lb-list" id="lb-list" aria-label="Ranking"></ol>
-          <p class="lb-foot">Ranked by AL@50, then AL@80, then mean success. Mean = average over the tasks a policy was evaluated on; a task without a result counts as not meeting <i>τ</i>. AL is computed on this page from the per-task results and matches the paper for the three single-task policies.</p>
+          <p class="lb-foot">Ranked by AL@50, then AL@80, then mean success. Mean = average over the tasks a policy was evaluated on; a task without a result counts as not reaching <i>τ</i>. AL is computed on this page from the per-task results and matches the paper for the three single-task policies.</p>
         </div>
+        <article class="lb-card reveal" id="lb-card" aria-live="polite"></article>
       </div>
 
       <!-- what the leaderboard is made of -->
