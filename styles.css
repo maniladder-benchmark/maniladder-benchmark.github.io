@@ -522,7 +522,7 @@ strong { color: var(--text); font-weight: 600; }
 .al-vers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
 .al-ver { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .al-ver-text h3 { margin: 0 0 6px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font: 600 clamp(22px, 2.4vw, 28px)/1.15 var(--font-display); letter-spacing: -0.02em; color: var(--text); }
-.al-ver-text h3 small { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.al-ver-text h3 small { font: inherit; letter-spacing: inherit; color: var(--text-2); }
 .al-ver-text h3 small i { text-transform: none; }
 .al-ver-text p { margin: 0; color: var(--text-2); font-size: 16px; line-height: 1.55; text-wrap: pretty; }
 .al-ver-text p strong { color: var(--text); font-weight: 600; }
