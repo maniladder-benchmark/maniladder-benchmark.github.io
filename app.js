@@ -1147,7 +1147,6 @@
       const D = XP.q1;
       if (!host || !D) return;
       const val = (k, i, j) => (k === "pi05" ? D.pi05[i][j] : k === "astra" ? D.astra[i][j] : D.pi05[i][j] - D.pi05VsFm[i][j]);
-      const wins = { fm: 0, pi05: 0, astra: 0 };
       const bar = el("div", { class: "xp-bar" });
       const seg1 = el("div", { class: "seg", role: "tablist", "aria-label": "View" });
       const keyBox = el("div", { class: "xp-key" });
@@ -1156,7 +1155,6 @@
       const { grid, cells } = suiteGrid(host, (node, i, j, s) => {
         const vs = METHODS.map((m) => val(m.key, i, j));
         const best = Math.max(...vs), wi = vs.indexOf(best);
-        wins[METHODS[wi].key]++;
         node.style.setProperty("--w", METHODS[wi].c);
         node.append(
           el("div", { class: "c-best" },
@@ -1185,7 +1183,6 @@
           box.style.background = tint(d, 40);
         }
       });
-      stats("xp-stats-q1", METHODS.map((m) => ({ parts: [{ v: wins[m.key], d: 0, s: "" }, `/ ${cells.length}`], label: m.name, c: m.c })));
     })();
 
     /* ── Q2a · Table VI: transfer across levels (arrows from the source level into the target level) ── */

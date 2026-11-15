@@ -968,10 +968,6 @@ strong { color: var(--text); font-weight: 600; }
    Big numbers count up, bars grow, lines and arrows draw in, labels follow: all once, on scroll-in (.seen). */
 #experiments { --real: #e9edf9; }
 #experiments .section-head { margin-bottom: 26px; }
-.xp-nav { display: flex; flex-wrap: wrap; gap: 8px; }
-.xp-nav a { display: inline-flex; align-items: center; gap: 9px; padding: 6px 15px 6px 6px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--text-2); font: 500 14px/1 var(--font-display); text-decoration: none; transition: color 0.2s, border-color 0.2s, background-color 0.2s; }
-.xp-nav a b { font: 600 12px/1 var(--font-mono); color: var(--orange); padding: 6px 8px; border-radius: 999px; background: rgba(255, 128, 56, 0.12); }
-.xp-nav a:hover { color: var(--text); border-color: var(--line-hi); background: var(--panel-hi); }
 
 .xp {
   margin-top: 26px;
