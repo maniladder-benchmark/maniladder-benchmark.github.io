@@ -482,89 +482,75 @@
     const { models, ranked, rho, taus } = LB;
     let selected = ranked[0].id;
 
-    // geometry: rung k sits at y(k); the zone between rungs k-1 and k is Level k
-    const W = 560, Y0 = 630, Y4 = 70, RAIL_L = 176, RAIL_R = 372, PAD = 24;
-    const ZH = (Y0 - Y4) / 4, BAR_W = 16, BAR_MAX = ZH - 2 * PAD;
-    const y = (s) => Y0 - (s / 4) * (Y0 - Y4);
-    const STEP = (RAIL_R - RAIL_L) / (models.length + 1);
-    const colX = (i) => RAIL_L + (i + 1) * STEP;
-    const barBottom = (k) => y(k - 1) - PAD; // k = 1..4
-    const LABEL_X = RAIL_R + 30, MIN_GAP = 44;
+    // geometry: a leaning ladder in oblique view. Rung k (Level k) sits at y(k); the ground is AL 0.
+    // The near rail leans to the right as it climbs; the far rail is the near one shifted by (DX, -DY).
+    const Y0 = 404, STEP_Y = 82, X0 = 196, LEAN = 0.3, DX = 128, DY = 30, TOP = 36;
+    const LEVEL_HEX = ["#8b93b0", "#2ee6c8", "#5ca0ff", "#a47dff", "#ff7a3d"];
+    const y = (k) => Y0 - k * STEP_Y;
+    const nearX = (yy) => X0 + (Y0 - yy) * LEAN;
+    const near = (k) => ({ x: nearX(y(k)), y: y(k) });
+    const far = (k) => ({ x: nearX(y(k)) + DX, y: y(k) - DY });
+    const NODE_GAP = 31, NODE_R = 11;
 
     // one ladder per threshold: AL@50 and AL@80 side by side
     function drawLadder(ladder, tau) {
       const uid = Math.round(tau * 100);
       const ref = (name) => `url(#${name}-${uid})`;
+      const yTop = y(4) - TOP;
       ladder.append(svg("defs", {},
-        svg("linearGradient", { id: `railGrad-${uid}`, gradientUnits: "userSpaceOnUse", x1: 0, y1: Y0, x2: 0, y2: Y4 },
+        svg("linearGradient", { id: `railGrad-${uid}`, gradientUnits: "userSpaceOnUse", x1: 0, y1: Y0, x2: 0, y2: yTop },
           svg("stop", { offset: "0%", "stop-color": "#2ee6c8" }),
           svg("stop", { offset: "33%", "stop-color": "#5ca0ff" }),
           svg("stop", { offset: "66%", "stop-color": "#a47dff" }),
           svg("stop", { offset: "100%", "stop-color": "#ff7a3d" })),
         svg("radialGradient", { id: `groundGlow-${uid}` },
-          svg("stop", { offset: "0%", "stop-color": "#2ee6c8", "stop-opacity": "0.35" }),
+          svg("stop", { offset: "0%", "stop-color": "#2ee6c8", "stop-opacity": "0.3" }),
           svg("stop", { offset: "100%", "stop-color": "#2ee6c8", "stop-opacity": "0" })),
         svg("filter", { id: `softGlow-${uid}`, x: "-50%", y: "-50%", width: "200%", height: "200%" },
           svg("feGaussianBlur", { stdDeviation: "6" }))));
 
-      for (let k = 1; k <= 4; k++) {
-        const top = y(k), bot = y(k - 1);
-        ladder.append(
-          svg("rect", { x: RAIL_L, y: top, width: RAIL_R - RAIL_L, height: bot - top, fill: ref("railGrad"), opacity: 0.035 }),
-          svg("text", { x: 134, y: (top + bot) / 2 - 2, "text-anchor": "end", class: "zone-label", fill: ["", "#2ee6c8", "#5ca0ff", "#a47dff", "#ff7a3d"][k], text: `Level ${k}` }),
-          svg("text", { x: 134, y: (top + bot) / 2 + 16, "text-anchor": "end", class: "zone-sub", text: LEVEL_NAMES[k] }),
-        );
-      }
+      // ground: glow under the feet and the faint line the AL 0 policies stand on
+      const g0 = near(0), f0 = far(0);
       ladder.append(
-        svg("ellipse", { cx: (RAIL_L + RAIL_R) / 2, cy: Y0 + 22, rx: 190, ry: 26, fill: ref("groundGlow") }),
-        svg("line", { x1: 40, y1: Y0 + 22, x2: W - 20, y2: Y0 + 22, stroke: "rgba(130,150,255,0.18)", "stroke-width": 1 }));
-      for (let k = 0; k <= 4; k++) {
-        ladder.append(
-          svg("line", { class: "rung-glow", x1: RAIL_L, x2: RAIL_R, y1: y(k), y2: y(k), stroke: ref("railGrad") }),
-          svg("line", { class: "rung", x1: RAIL_L, x2: RAIL_R, y1: y(k), y2: y(k), stroke: ref("railGrad") }),
-          svg("text", { x: RAIL_L - 16, y: y(k) + 4, "text-anchor": "end", class: "tick", text: String(k) }));
-      }
-      ladder.append(
-        svg("line", { x1: RAIL_L, x2: RAIL_L, y1: Y4 - 34, y2: Y0 + 22, stroke: ref("railGrad"), "stroke-width": 16, opacity: 0.16, filter: ref("softGlow") }),
-        svg("line", { x1: RAIL_R, x2: RAIL_R, y1: Y4 - 34, y2: Y0 + 22, stroke: ref("railGrad"), "stroke-width": 16, opacity: 0.16, filter: ref("softGlow") }),
-        svg("line", { class: "rail", x1: RAIL_L, x2: RAIL_L, y1: Y4 - 34, y2: Y0 + 22, stroke: ref("railGrad") }),
-        svg("line", { class: "rail", x1: RAIL_R, x2: RAIL_R, y1: Y4 - 34, y2: Y0 + 22, stroke: ref("railGrad") }),
-        svg("text", { x: (RAIL_L + RAIL_R) / 2, y: Y4 - 46, "text-anchor": "middle", class: "ladder-cap", text: alName(tau) }));
+        svg("ellipse", { cx: (g0.x + f0.x) / 2, cy: (g0.y + f0.y) / 2 + 6, rx: 190, ry: 34, fill: ref("groundGlow") }),
+        svg("line", { class: "ground", x1: g0.x - 0.42 * DX, y1: g0.y + 0.42 * DY, x2: f0.x + 0.42 * DX, y2: f0.y - 0.42 * DY }),
+        svg("text", { x: g0.x - 0.42 * DX - 14, y: g0.y + 0.42 * DY - 1, "text-anchor": "end", class: "zone-label", style: { fill: LEVEL_HEX[0] }, text: "AL 0" }),
+        svg("text", { x: g0.x - 0.42 * DX - 14, y: g0.y + 0.42 * DY + 14, "text-anchor": "end", class: "zone-sub", text: "Ground" }));
 
-      // coverage bars: in each level zone, one bar per policy = share of the level's tasks with success >= tau
-      const barsLayer = svg("g", {});
+      // far rail first, then the rungs, then the near rail on top
+      const railEnd = (p0, dy) => ({ x1: p0.x, y1: p0.y, x2: p0.x + (Y0 - yTop) * LEAN, y2: yTop + dy });
+      ladder.append(
+        svg("line", { ...railEnd(f0, -DY), stroke: ref("railGrad"), "stroke-width": 14, opacity: 0.12, filter: ref("softGlow") }),
+        svg("line", { class: "rail rail-far", ...railEnd(f0, -DY), stroke: ref("railGrad") }));
       for (let k = 1; k <= 4; k++) {
-        const ty = barBottom(k) - rho * BAR_MAX;
-        barsLayer.append(svg("line", { class: "al-thr", x1: RAIL_L + 8, x2: RAIL_R - 8, y1: ty, y2: ty }));
+        const a = near(k), b = far(k);
+        ladder.append(
+          svg("line", { class: "rung-glow", x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: LEVEL_HEX[k] }),
+          svg("line", { class: "rung", x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: LEVEL_HEX[k] }),
+          // level label: centered on its rung, left of the near rail
+          svg("text", { x: a.x - 22, y: a.y - 1, "text-anchor": "end", class: "zone-label", style: { fill: LEVEL_HEX[k] }, text: `Level ${k}` }),
+          svg("text", { x: a.x - 22, y: a.y + 14, "text-anchor": "end", class: "zone-sub", text: LEVEL_NAMES[k] }));
       }
-      barsLayer.append(
-        svg("text", { class: "al-thr-label", x: RAIL_L + 7, y: barBottom(1) - rho * BAR_MAX - 5, text: `${Math.round(rho * 100)}%` }));
-      const hitLayer = svg("g", {});
+      ladder.append(
+        svg("line", { ...railEnd(g0, 0), stroke: ref("railGrad"), "stroke-width": 16, opacity: 0.16, filter: ref("softGlow") }),
+        svg("line", { class: "rail", ...railEnd(g0, 0), stroke: ref("railGrad") }));
+
       const nodesLayer = svg("g", {});
       const labelsLayer = svg("g", { class: "labels" });
 
+      // policies standing on the same rung share it: spread along the rung, centered
+      const groups = [0, 1, 2, 3, 4].map((k) => models.filter((m) => m.al[tau] === k));
+      const len = Math.hypot(DX, DY), ux = DX / len, uy = -DY / len;
+      const start = { x: (g0.x + f0.x) / 2, y: (g0.y + f0.y) / 2 };
       const parts = models.map((m) => {
-        const p = { m, x: colX(m.i), ty: y(m.al[tau]), ly: 0, bars: [] };
-        for (let k = 1; k <= 4; k++) {
-          const x = p.x - BAR_W / 2, b = barBottom(k), c = m.cov[tau][k - 1];
-          const fill = svg("rect", { x, y: b, width: BAR_W, height: 0, rx: 3, fill: m.color, "fill-opacity": c.pass ? 1 : 0.4 });
-          hitLayer.append(svg("rect", {
-            class: "al-hit", x: p.x - STEP / 2, y: y(k), width: STEP, height: ZH,
-            onmouseenter: (evt) => showTip(`<div class="tt-title">${m.name} · ${m.variant}</div>` +
-              `<div class="tt-row"><span>Level ${k} tasks ≥ ${Math.round(tau * 100)}%</span><b>${c.q} / ${c.n}</b></div>` +
-              `<div class="tt-row"><span>Coverage C<sub>${k}</sub></span><b>${pct(c.q / c.n, 0)}</b></div>` +
-              `<div class="tt-row"><span>Needed (ρ = ${rho})</span><b>${c.need} / ${c.n}</b></div>` +
-              `<div class="tt-row"><span>Level ${k} criterion</span><b>${c.pass ? "✓ met" : "✗ not met"}</b></div>`, evt),
-            onmousemove: moveTip, onmouseleave: hideTip,
-            onclick: () => select(m.id),
-          }));
-          barsLayer.append(svg("rect", { class: "al-track", x, y: b - BAR_MAX, width: BAR_W, height: BAR_MAX, rx: 3 }), fill);
-          p.bars.push({ fill, base: b, to: (c.q / c.n) * BAR_MAX });
-        }
+        const k = m.al[tau], grp = groups[k], j = grp.indexOf(m);
+        const off = (j - (grp.length - 1) / 2) * NODE_GAP;
+        const mid = { x: (near(k).x + far(k).x) / 2, y: (near(k).y + far(k).y) / 2 };
+        const p = { m, k, tx: mid.x + off * ux, ty: mid.y + off * uy, sx: start.x + (m.i - (models.length - 1) / 2) * NODE_GAP * ux, sy: start.y + (m.i - (models.length - 1) / 2) * NODE_GAP * uy };
         p.node = svg("g", {
           class: "node", tabindex: 0, role: "button",
-          "aria-label": `${m.name}, ${m.variant}: ${alName(tau)} ${m.al[tau]}`,
-          style: { transform: `translate(${p.x}px, ${Y0}px)` },
+          "aria-label": `${m.name}, ${m.variant}: ${alName(tau)} ${k}`,
+          style: { transform: `translate(${p.sx}px, ${p.sy}px)` },
           onclick: () => select(m.id),
           onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(m.id); } },
           onmouseenter: (e) => showTip(`<div class="tt-title">${m.name} · ${m.variant}</div>` +
@@ -572,45 +558,40 @@
             `<div class="tt-row"><span>Mean success</span><b>${pct(m.avg)}</b></div>`, e),
           onmousemove: moveTip, onmouseleave: hideTip,
         },
-          svg("circle", { class: "node-halo", r: 30, fill: m.color, opacity: 0.25, filter: ref("softGlow") }),
-          svg("circle", { r: 24, fill: "transparent" }),
-          svg("circle", { class: "node-ring", r: 15, fill: "#0b0f1c", stroke: m.color, "stroke-width": 2.5 }),
-          svg("circle", { r: 6, fill: m.color }));
+          svg("circle", { class: "node-halo", r: 22, fill: m.color, opacity: 0.3, filter: ref("softGlow") }),
+          svg("circle", { r: 16, fill: "transparent" }),
+          svg("circle", { class: "node-ring", r: NODE_R, fill: "#0b0f1c", stroke: m.color, "stroke-width": 3 }),
+          svg("circle", { r: 4, fill: m.color }));
         nodesLayer.append(p.node);
-        p.leader = svg("path", { class: "leader", d: "" });
-        p.labelName = svg("text", { x: LABEL_X, class: "node-label", text: m.name });
-        p.labelSub = svg("text", { x: LABEL_X, class: "node-sub", text: `${m.variant.replace(/\s*\(.*\)$/, "")} · AL ${m.al[tau]}` });
-        p.label = svg("g", { style: { opacity: 0, transition: "opacity .6s ease .9s" } }, p.leader, p.labelName, p.labelSub);
-        labelsLayer.append(p.label);
         return p;
       });
-      ladder.append(barsLayer, labelsLayer, hitLayer, nodesLayer);
 
-      // labels right of the ladder, dodged, in node order
-      const byY = parts.slice().sort((a, b) => a.ty - b.ty || a.m.i - b.m.i);
-      byY.forEach((p, i) => { p.ly = Math.min(p.ty, Y0 - 8); if (i > 0) p.ly = Math.max(p.ly, byY[i - 1].ly + MIN_GAP); });
-      const overflow = byY.length ? byY[byY.length - 1].ly - (Y0 + 8) : 0;
-      if (overflow > 0) byY.forEach((p) => { p.ly -= overflow; });
-      parts.forEach((p) => {
-        p.labelName.setAttribute("y", p.ly - 2);
-        p.labelSub.setAttribute("y", p.ly + 14);
-        p.leader.setAttribute("d", `M${p.x + 16},${p.ty} L${RAIL_R + 12},${p.ty} L${LABEL_X - 6},${p.ly - 4}`);
+      // direct labels: right of each occupied rung, one line per policy, in the order of the rings
+      const LINE = 18;
+      groups.forEach((grp, k) => {
+        if (!grp.length) return;
+        const lx = far(k).x + (k === 0 ? 0.42 * DX : 0) + 26;
+        let top = far(k).y - (k === 0 ? 0.42 * DY : 0) - ((grp.length - 1) * LINE) / 2;
+        top = Math.min(top, Y0 + 22 - (grp.length - 1) * LINE);
+        grp.forEach((m, j) => {
+          labelsLayer.append(
+            svg("circle", { cx: lx, cy: top + j * LINE - 4, r: 4, fill: m.color }),
+            svg("text", { x: lx + 11, y: top + j * LINE, class: "node-label", text: m.short }));
+        });
       });
+      labelsLayer.style.opacity = 0;
+      labelsLayer.style.transition = "opacity .6s ease .9s";
+      ladder.append(labelsLayer, nodesLayer);
 
       let climbed = false;
       function climb() {
         if (climbed) return;
         climbed = true;
-        parts.forEach((p) => p.bars.forEach((b) => tween(900, (t) => {
-          const h = b.to * t;
-          b.fill.setAttribute("height", Math.max(0, h));
-          b.fill.setAttribute("y", b.base - h);
-        })));
         parts.forEach((p, i) => setTimeout(() => {
           p.node.style.transition = "transform 1.4s cubic-bezier(.22,1,.36,1)";
-          p.node.style.transform = `translate(${p.x}px, ${p.ty}px)`;
-          p.label.style.opacity = 1;
+          p.node.style.transform = `translate(${p.tx}px, ${p.ty}px)`;
         }, reduceMotion ? 0 : 150 + i * 200));
+        labelsLayer.style.opacity = 1;
       }
       const wrap = ladder.closest(".reveal");
       if (wrap && !wrap.classList.contains("in")) wrap.addEventListener("revealed", climb, { once: true });

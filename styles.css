@@ -538,7 +538,9 @@ strong { color: var(--text); font-weight: 600; }
 .ladder { width: 100%; height: auto; overflow: visible; }
 .ladder text { font-family: var(--font-body); }
 .ladder .rail { stroke-width: 8; stroke-linecap: round; }
+.ladder .rail-far { stroke-width: 6; opacity: 0.6; }
 .ladder .rung { stroke-width: 6; stroke-linecap: round; }
+.ladder .ground { stroke: rgba(130, 150, 255, 0.28); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 1 6; }
 .ladder .rung-glow { stroke-width: 14; stroke-linecap: round; opacity: 0.18; filter: blur(4px); }
 .ladder .zone-label { font: 600 15px var(--font-display); }
 .ladder .zone-sub { font: 400 11px var(--font-mono); fill: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
