@@ -262,6 +262,45 @@
           </div>
         </div>
       </div>
+
+      <!-- benchmark analysis (paper Sec. IV-C) -->
+      <div class="ov-block reveal" id="bench-analysis">
+        <div class="ov-head">
+          <h3>Benchmark analysis</h3>
+        </div>
+
+        <h4 class="ba-group">Success rate of the reference policy vs. task properties</h4>
+        <div class="ba-row ba-props">
+          <figure class="ba-panel">
+            <figcaption>Task horizon <small>steps</small></figcaption>
+            <div class="chart" data-chart="horizon-sr"></div>
+          </figure>
+          <figure class="ba-panel">
+            <figcaption>Object complexity</figcaption>
+            <div class="chart" data-chart="geom"></div>
+          </figure>
+          <figure class="ba-panel">
+            <figcaption>Manipulation complexity</figcaption>
+            <div class="chart" data-chart="proc"></div>
+          </figure>
+          <figure class="ba-panel">
+            <figcaption>Perception difficulty</figcaption>
+            <div class="chart" data-chart="perc"></div>
+          </figure>
+        </div>
+
+        <h4 class="ba-group">Task distribution</h4>
+        <div class="ba-row ba-dists">
+          <figure class="ba-panel">
+            <figcaption>Task horizon <small>steps</small></figcaption>
+            <div class="chart" data-chart="horizon"></div>
+          </figure>
+          <figure class="ba-panel">
+            <figcaption>Number of stages</figcaption>
+            <div class="chart" data-chart="stages"></div>
+          </figure>
+        </div>
+      </div>
     </section>
 
     <!-- ───────────────────────── Leaderboard ───────────────────────── -->
@@ -509,6 +548,7 @@
   <script src="data/video-status.js"></script>
   <script src="data/task-scores.js"></script>
   <script src="data/leaderboard.js"></script>
+  <script src="data/task-properties.js"></script>
   <script src="data/experiments.js"></script>
   <script src="app.js"></script>
 </body>

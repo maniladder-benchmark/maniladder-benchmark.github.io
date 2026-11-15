@@ -1663,10 +1663,172 @@
     });
   }
 
+  /* ───────────── overview: benchmark analysis (paper Sec. IV-C) ─────────────
+     Success rate of the reference policy (small flow-matching, 50 rollouts) against four task
+     properties, and how horizon and stage count are distributed. Charts are drawn at the pixel
+     width of their panel, so text keeps one size at every breakpoint. */
+  function initBenchAnalysis() {
+    const P = window.MANILADDER_TASK_PROPS;
+    const L = window.MANILADDER_LEADERBOARD;
+    const hosts = [...document.querySelectorAll("#bench-analysis [data-chart]")];
+    if (!P || !L || !hosts.length) return;
+    const names = new Map((window.MANILADDER_TASKS || []).map((t) => [t.env_id, t.display_name]));
+    const rows = L.tasks
+      .filter((t) => P.tasks[t.id] && t.sr[0] !== null && t.sr[0] !== undefined)
+      .map((t) => ({ id: t.id, name: names.get(t.id) || t.id, sr: t.sr[0], ...P.tasks[t.id] }));
+    const H = 228;
+    const tipRow = (label, value) => `<div class="tt-row"><span>${label}</span><b>${value}</b></div>`;
+    const tipHead = (title) => `<div class="tt-title">${title}</div>`;
+
+    function frame(host, label, m) {
+      const W = Math.max(200, Math.round(host.clientWidth));
+      const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": label });
+      host.replaceChildren(root);
+      return { root, W, x0: m.l, x1: W - m.r, y0: H - m.b, y1: m.t };
+    }
+    // success-rate axis shared by the four property charts
+    function srAxis(f) {
+      const y = (v) => f.y0 - v * (f.y0 - f.y1);
+      for (const v of [0, 0.25, 0.5, 0.75, 1]) {
+        f.root.append(
+          svg("line", { class: v ? "grid" : "baseline", x1: f.x0, x2: f.x1, y1: y(v), y2: y(v) }),
+          svg("text", { class: "axis-label", x: f.x0 - 8, y: y(v) + 4, "text-anchor": "end", text: `${v * 100}%` }));
+      }
+      return y;
+    }
+    const xTick = (f, x, text) => svg("text", { class: "axis-label", x, y: f.y0 + 17, "text-anchor": "middle", text });
+    const hover = (node, html, on, off) => {
+      node.addEventListener("pointerenter", (e) => { on && on(); showTip(html, e); });
+      node.addEventListener("pointermove", moveTip);
+      node.addEventListener("pointerleave", () => { off && off(); hideTip(); });
+    };
+
+    // success rate vs. horizon: one dot per task, log x, least-squares line
+    function drawScatter(host) {
+      const f = frame(host, "Success rate of the reference policy against task horizon, one dot per task. Success falls as the horizon grows.", { l: 42, r: 12, t: 10, b: 26 });
+      const y = srAxis(f);
+      const lx = (h) => Math.log10(h);
+      const lo = lx(170), hi = lx(5800);
+      const x = (h) => f.x0 + ((lx(h) - lo) / (hi - lo)) * (f.x1 - f.x0);
+      for (const h of [200, 500, 1000, 2000, 5000]) f.root.append(xTick(f, x(h), String(h)));
+
+      const n = rows.length;
+      const mx = rows.reduce((a, r) => a + lx(r.h), 0) / n, my = rows.reduce((a, r) => a + r.sr, 0) / n;
+      const slope = rows.reduce((a, r) => a + (lx(r.h) - mx) * (r.sr - my), 0) / rows.reduce((a, r) => a + (lx(r.h) - mx) ** 2, 0);
+      const at = (u) => my + slope * (u - mx);
+      // keep the line inside the plot: stop where it meets 0% or 100%
+      const ends = [mx + (1 - my) / slope, mx + (0 - my) / slope].sort((p, q) => p - q);
+      const clampU = (u) => Math.min(Math.max(u, ends[0]), ends[1]);
+      const u0 = clampU(lx(Math.min(...rows.map((r) => r.h)))), u1 = clampU(lx(Math.max(...rows.map((r) => r.h))));
+      const ux = (u) => f.x0 + ((u - lo) / (hi - lo)) * (f.x1 - f.x0);
+      f.root.append(svg("line", { class: "ba-fit", x1: ux(u0), y1: y(at(u0)), x2: ux(u1), y2: y(at(u1)) }));
+
+      const pts = rows.map((r) => ({ r, cx: x(r.h), cy: y(r.sr) }));
+      f.root.append(...pts.map((p) => svg("circle", { class: "ba-dot", cx: p.cx, cy: p.cy, r: 3.2 })));
+      const ring = svg("circle", { class: "ba-ring", r: 5, visibility: "hidden" });
+      const hit = svg("rect", { class: "hit", x: f.x0 - 8, y: f.y1 - 8, width: f.x1 - f.x0 + 16, height: f.y0 - f.y1 + 16 });
+      f.root.append(ring, hit);
+      let cur = null;
+      const clear = () => { cur = null; ring.setAttribute("visibility", "hidden"); hideTip(); };
+      const track = (e) => {
+        const b = f.root.getBoundingClientRect();
+        const px = ((e.clientX - b.left) * f.W) / b.width, py = ((e.clientY - b.top) * H) / b.height;
+        let best = null, bd = 18 * 18;
+        for (const p of pts) { const d = (p.cx - px) ** 2 + (p.cy - py) ** 2; if (d < bd) { bd = d; best = p; } }
+        if (!best) return clear();
+        if (best !== cur) {
+          cur = best;
+          ring.setAttribute("cx", best.cx); ring.setAttribute("cy", best.cy); ring.setAttribute("visibility", "visible");
+          showTip(tipHead(best.r.name) + tipRow("Horizon", `${best.r.h} steps`) + tipRow("Success rate", pct(best.r.sr, 0)), e);
+        } else moveTip(e);
+      };
+      hit.addEventListener("pointermove", track);
+      hit.addEventListener("pointerdown", track);
+      hit.addEventListener("pointerleave", clear);
+    }
+
+    // success rate by an ordinal 1-5 score: box = quartiles, line = median, whiskers = 1.5 IQR
+    function drawBox(host, key, label) {
+      const f = frame(host, `Success rate of the reference policy by ${label.toLowerCase()} score, 1 to 5: box plots with one dot per task.`, { l: 42, r: 12, t: 10, b: 26 });
+      const y = srAxis(f);
+      const slot = (f.x1 - f.x0) / 5;
+      const bw = Math.min(30, slot * 0.58);
+      const q = (v, p) => { const i = (v.length - 1) * p, a = Math.floor(i); return v[a] + (v[Math.min(a + 1, v.length - 1)] - v[a]) * (i - a); };
+      for (let c = 1; c <= 5; c++) {
+        const cx = f.x0 + slot * (c - 0.5);
+        f.root.append(xTick(f, cx, String(c)));
+        const v = rows.filter((r) => r[key] === c).map((r) => r.sr).sort((a, b) => a - b);
+        if (!v.length) continue;
+        const q1 = q(v, 0.25), med = q(v, 0.5), q3 = q(v, 0.75), iqr = q3 - q1;
+        const wLo = v.find((s) => s >= q1 - 1.5 * iqr), wHi = [...v].reverse().find((s) => s <= q3 + 1.5 * iqr);
+        const col = svg("rect", { class: "ba-col", x: cx - slot / 2, y: f.y1 - 4, width: slot, height: f.y0 - f.y1 + 4, rx: 6 });
+        const g = svg("g", { class: "ba-g" }, col,
+          v.map((s, i) => svg("circle", { class: "ba-jit", cx: cx + (((i * 0.618034) % 1) - 0.5) * bw * 0.8, cy: y(s), r: 2 })),
+          svg("path", { class: "ba-whisk", d: `M${cx},${y(q3)}V${y(wHi)}M${cx - bw / 4},${y(wHi)}H${cx + bw / 4}M${cx},${y(q1)}V${y(wLo)}M${cx - bw / 4},${y(wLo)}H${cx + bw / 4}` }),
+          svg("rect", { class: "ba-box", x: cx - bw / 2, y: y(q3), width: bw, height: Math.max(1, y(q1) - y(q3)), rx: 3 }),
+          svg("line", { class: "ba-med", x1: cx - bw / 2 + 1.5, x2: cx + bw / 2 - 1.5, y1: y(med), y2: y(med) }));
+        hover(g, tipHead(`${label} ${c}`) + tipRow("Tasks", v.length) + tipRow("Median", pct(med, 0)) + tipRow("Middle half", `${pct(q1, 0)} – ${pct(q3, 0)}`),
+          () => col.classList.add("on"), () => col.classList.remove("on"));
+        f.root.append(g);
+      }
+    }
+
+    // counts per bin; the value sits on each bar, so there is no count axis
+    function drawBars(host, label, bins) {
+      // bin labels turn when they no longer fit side by side (narrow screens)
+      const tilt = Math.max(...bins.map((b) => b.label.length)) * 6.8 > (Math.max(200, host.clientWidth) - 12) / bins.length - 6;
+      const f = frame(host, label, { l: 6, r: 6, t: 22, b: tilt ? 48 : 26 });
+      const max = Math.max(...bins.map((b) => b.n));
+      const slot = (f.x1 - f.x0) / bins.length;
+      const bw = Math.min(44, slot * 0.7);
+      const y = (v) => f.y0 - (v / max) * (f.y0 - f.y1);
+      bins.forEach((b, i) => {
+        const cx = f.x0 + slot * (i + 0.5);
+        const col = svg("rect", { class: "ba-col", x: cx - slot / 2, y: f.y1 - 18, width: slot, height: f.y0 - f.y1 + 18 });
+        const g = svg("g", { class: "ba-g" }, col,
+          svg("path", { class: "ba-bar", d: vbar(cx - bw / 2, y(b.n), bw, f.y0 - y(b.n)) }),
+          svg("text", { class: "val", x: cx, y: y(b.n) - 6, "text-anchor": "middle", text: String(b.n) }),
+          tilt ? svg("text", { class: "axis-label", x: cx + 4, y: f.y0 + 13, "text-anchor": "end", transform: `rotate(-40 ${cx + 4} ${f.y0 + 13})`, text: b.label }) : xTick(f, cx, b.label));
+        hover(g, tipHead(b.tip) + tipRow("Tasks", b.n), () => g.classList.add("on"), () => g.classList.remove("on"));
+        f.root.append(g);
+      });
+      f.root.append(svg("line", { class: "baseline", x1: f.x0, x2: f.x1, y1: f.y0, y2: f.y0 }));
+    }
+    function horizonBins() {
+      const tops = [300, 400, 500, 600, 800, 1000, 1500, 2000, Infinity];
+      const hs = Object.values(P.tasks).map((t) => t.h);
+      const hMin = Math.min(...hs), hMax = Math.max(...hs);
+      return tops.map((top, i) => {
+        const from = i ? tops[i - 1] + 1 : hMin, to = Number.isFinite(top) ? top : hMax;
+        return { label: Number.isFinite(top) ? `≤${top}` : `>${tops[i - 1]}`, tip: `${from}–${to} steps`, n: hs.filter((h) => h >= from && h <= to).length };
+      });
+    }
+
+    const draw = {
+      "horizon-sr": drawScatter,
+      geom: (h) => drawBox(h, "geom", "Object complexity"),
+      proc: (h) => drawBox(h, "proc", "Manipulation complexity"),
+      perc: (h) => drawBox(h, "perc", "Perception difficulty"),
+      horizon: (h) => drawBars(h, "Number of tasks by horizon, in steps.", horizonBins()),
+      stages: (h) => drawBars(h, "Number of tasks by number of stages.", P.stages.labels.map((label, i) => ({ label, tip: `${label} stage${label === "1" ? "" : "s"}`, n: P.stages.counts[i] }))),
+    };
+    const widths = new WeakMap();
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        const w = Math.round(e.contentRect.width);
+        if (!w || widths.get(e.target) === w) continue;
+        widths.set(e.target, w);
+        draw[e.target.dataset.chart](e.target);
+      }
+    });
+    hosts.forEach((h) => draw[h.dataset.chart] && ro.observe(h));
+  }
+
   initHeroWall();
   initMatrix();
   initLevelFlow();
   initSuiteInside();
+  initBenchAnalysis();
   initLeaderboard();
   initTaskResults();
   initGallery();
