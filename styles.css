@@ -987,6 +987,10 @@ strong { color: var(--text); font-weight: 600; }
 .xp-q { display: inline-block; font: 600 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--orange); padding: 6px 9px; border-radius: 7px; background: rgba(255, 128, 56, 0.1); border: 1px solid rgba(255, 128, 56, 0.28); }
 .xp-title h3 { margin: 14px 0 0; font: 600 clamp(28px, 3.8vw, 46px)/1.04 var(--font-display); letter-spacing: -0.03em; color: var(--text); text-wrap: balance; }
 .xp-title p { margin: 10px 0 0; font-size: 15.5px; line-height: 1.45; color: var(--text-2); text-wrap: pretty; }
+@media (min-width: 761px) {
+  #xp-q3 .xp-title { flex-basis: auto; }
+  #xp-q3 .xp-title h3 { white-space: nowrap; }
+}
 
 /* the big numbers: one size, one face, everywhere */
 .xp-stats { display: flex; flex-wrap: wrap; gap: 16px 36px; }
