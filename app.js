@@ -177,6 +177,32 @@
     if (intro && intro.paused) intro.play().catch(() => {});
   });
 
+  /* The overview video plays by itself once it scrolls into view and pauses when it leaves.
+     Browsers refuse to start a video with sound before the visitor has interacted with the
+     page, so if that is refused it starts muted (the controls unmute it). */
+  if (intro) {
+    let autoPaused = false; // paused by us (scrolled away), as opposed to by the visitor
+    let started = false;
+    const autoplay = () => {
+      intro.play().catch(() => {
+        intro.muted = true;
+        intro.play().catch(() => {});
+      });
+    };
+    new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          if (!started || autoPaused) autoplay();
+          started = true;
+          autoPaused = false;
+        } else if (!intro.paused) {
+          intro.pause();
+          autoPaused = true;
+        }
+      }
+    }, { threshold: 0.5 }).observe(intro);
+  }
+
   function toItem(t) {
     const emb = t.embodiment || "";
     return {
